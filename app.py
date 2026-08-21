@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import onnxruntime as ort
+import tf_keras as keras
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
 
@@ -53,6 +53,12 @@ t = TEXTS[st.session_state.lang]
 st.title(t['title'])
 st.write(t['subtitle'])
 
+@st.cache_resource
+def load_my_model():
+    return keras.models.load_model("keras_model.h5", compile=False)
+
+model = load_my_model()
+
 with open("labels.txt", "r", encoding="utf-8") as f:
     class_names = [line.strip() for line in f.readlines()]
 
@@ -66,18 +72,13 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption=t['uploaded_img'], use_container_width=True)
         
-        # تجهيز الصورة
         size = (224, 224)
         image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized)
         normalized = (image_array.astype(np.float32) / 127.5) - 1.0
         data = np.expand_dims(normalized, axis=0)
 
-        # استدعاء نموذج Keras مباشرة عبر PIL/Numpy
-        import keras
-        model = keras.models.load_model("keras_model.h5", compile=False)
         prediction = model.predict(data, verbose=0)
-        
         index = np.argmax(prediction)
         predicted_class = class_names[index]
         confidence = prediction[0][index] * 100
@@ -102,4 +103,4 @@ if uploaded_file is not None:
         st.caption(f"💡 {t['general_desc']}")
 
     except Exception as e:
-        st.error(f"{t['error']} ({e})")
+        st.error(t['error'])
