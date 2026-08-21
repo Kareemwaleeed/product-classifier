@@ -13,153 +13,87 @@ if 'lang' not in st.session_state:
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. Comprehensive Items Nutrition Database
-ITEMS_DATABASE = {
-    'ar': {
-        'mango': {
-            'cat_name': "🥭 مانجو (Mango)",
-            'status': "✅ غني بالفيتامينات والطاقة الطبيعية",
-            'nutrients': "فيتامين C (60%)، فيتامين A، ألياف، بوتاسيوم، ومضادات أكسدة (بيتا كاروتين).",
-            'health_effect': "يعزز المناعة، يدعم صحة العيون، ويحسن صحة الجهاز الهضمي.",
-            'best_time': "صباحاً أو كوجبة خفيفة قبل التمارين الرياضية.",
-            'purchase_time': "شراء الفاكهة الطازجة أسبوعياً حسب الموسم."
-        },
-        'mango_yoghurt': {
-            'cat_name': "🥭 🥛 زبادي بالمانجو (Mango Yoghurt)",
-            'status': "✅ بروتين وكالسيوم مع طاقة سريعة",
-            'nutrients': "كالسيوم، بروتين (6g)، فيتامين C، بروبيوتيك، وسكريات الفاكهة.",
-            'health_effect': "يدعم العظام والأسنان، يحسن بكتيريا الأمعاء النافعة، ويمد الجسم بالطاقة.",
-            'best_time': "كوجبة خفيفة (سناك) بين الوجبة الرئيسية أو بعد التمارين.",
-            'purchase_time': "التحقق من تاريخ الصلاحية وحفظه مبرداً."
-        },
-        'yoghurt': {
-            'cat_name': "🥛 زبادي / ألبان (Dairy Yoghurt)",
-            'status': "✅ مصدر ممتاز للبروتين والكالسيوم",
-            'nutrients': "كالسيوم (30%)، بروتين عالي، فيتامين B12، بروبيوتيك، وبوتاسيوم.",
-            'health_effect': "يقوي العظام، يدعم صحة الجهاز الهضمي، ويعزز بناء العضلات.",
-            'best_time': "في الإفطار أو كوجبة خفيفة مهدئة قبل النوم.",
-            'purchase_time': "تأكد من سلامة العبوة وتاريخ الصلاحية."
-        },
-        'apple': {
-            'cat_name': "🍎 تفاح (Apple)",
-            'status': "✅ غني بالألياف ومضادات الأكسدة",
-            'nutrients': "ألياف البكتين، فيتامين C، بورسيتين، ومضادات أكسدة.",
-            'health_effect': "ينظم مستويات السكر، يخفض الكوليسترول، ويساعد في الهضم.",
-            'best_time': "صباحاً أو بين الوجبات كوجبة خفيفة مشبعة.",
-            'purchase_time': "شراء التفاح الطازج والمتماسك أسبوعياً."
-        },
-        'banana': {
-            'cat_name': "🍌 موز (Banana)",
-            'status': "✅ مصدر ممتاز للبوتاسيوم والطاقة",
-            'nutrients': "بوتاسيوم، فيتامين B6، فيتامين C، ألياف، وكربوهيدرات صحية.",
-            'health_effect': "ينظم ضغط الدم، يحسن وظائف العضلات، ويمد الجسم بطاقة سريعة.",
-            'best_time': "قبل أو بعد التمارين الرياضية أو مع الإفطار.",
-            'purchase_time': "شراء الموز أسبوعياً حسب درجة النضج."
-        },
-        'cucumber': {
-            'cat_name': "🥒 خيار (Cucumber)",
-            'status': "✅ قليل السعرات وغني بالماء",
-            'nutrients': "ماء (95%)، فيتامين K، ألياف، ومغنيسيوم.",
-            'health_effect': "يرطب الجسم، يساعد في إنقاص الوزن، ويحسن الهضم.",
-            'best_time': "مع السلطات والوجبات الرئيسية أو كوجبة خفيفة مشبعة.",
-            'purchase_time': "شراء الخضار طازجة أسبوعياً."
-        },
-        'default': {
-            'cat_name': "📦 منتج غذائي (Food Product)",
-            'status': "🔍 متوازن العناصر",
-            'nutrients': "فيتامينات، معادن، ألياف، وكربوهيدرات حسب طبيعة الصنف.",
-            'health_effect': "يدعم التغذية المتوازنة والصحة العامة عند تناوله باعتدال.",
-            'best_time': "خلال اليوم حسب الاحتياج اليومي.",
-            'purchase_time': "مراجعة المكونات وتاريخ الصلاحية."
+# 3. Dynamic Nutrition Database Generator
+def get_nutrition_details(product_name, lang_code):
+    p_lower = product_name.lower()
+    
+    # Nutritional logic based on detected item
+    if any(k in p_lower for k in ['yoghurt', 'yogurt', 'laban', 'milk', 'زبادي', 'لبن', 'ألبان']):
+        if any(k in p_lower for k in ['mango', 'fruit', 'strawberry', 'apple', 'مانجو', 'فواكه', 'فراولة']):
+            return {
+                'cat': "🥛🥭 زبادي بنكهة الفواكه (Fruit Yoghurt)" if lang_code == 'ar' else "🥛🥭 Fruit Flavored Yoghurt",
+                'status': "✅ بروتين وكالسيوم مع طاقة طبيعية" if lang_code == 'ar' else "✅ High Protein & Calcium Energy Snack",
+                'nutrients': "بروتين، كالسيوم، فيتامين C، بروبيوتيك (بكتيريا نافعة)، وسكريات طبيعية." if lang_code == 'ar' else "Protein, Calcium, Vitamin C, Probiotics, Natural Fruit Sugars.",
+                'effect': "يقوي العظام والأسنان، يحسن صحة الهضم والأمعاء، ويمد الجسم بالطاقة." if lang_code == 'ar' else "Supports bones and teeth, improves gut health, provides quick energy.",
+                'time': "كوجبة خفيفة (سناك) بين الوجبات أو بعد التمارين الرياضية." if lang_code == 'ar' else "As a mid-day snack or post-workout.",
+                'buy': "تأكد من تاريخ الصلاحية وحفظ المنتج مبرداً." if lang_code == 'ar' else "Check expiration date and keep refrigerated."
+            }
+        return {
+            'cat': "🥛 زبادي / منتجات ألبان (Dairy Product)" if lang_code == 'ar' else "🥛 Dairy Yoghurt Product",
+            'status': "✅ غني بالبروتين والكالسيوم" if lang_code == 'ar' else "✅ Rich in Calcium & Protein",
+            'nutrients': "كالسيوم، بروتين عالي، فيتامين B12، بروبيوتيك، وبوتاسيوم." if lang_code == 'ar' else "Calcium, High Protein, Vitamin B12, Probiotics, Potassium.",
+            'effect': "يعزز بناء العضلات، يقوي العظام، ويحسن عمل الجهاز الهضمي." if lang_code == 'ar' else "Strengthens bones, promotes gut bacteria, supports muscle recovery.",
+            'time': "في الإفطار أو كوجبة خفيفة مهدئة قبل النوم." if lang_code == 'ar' else "At breakfast or as a light evening snack.",
+            'buy': "فحص سلامة العبوة وتاريخ الصلاحية." if lang_code == 'ar' else "Check packaging seal and expiry date."
         }
-    },
-    'en': {
-        'mango': {
-            'cat_name': "🥭 Fresh Mango",
-            'status': "✅ Rich in Vitamins & Natural Energy",
-            'nutrients': "Vitamin C (60%), Vitamin A, Fiber, Potassium, Beta-carotene.",
-            'health_effect': "Boosts immunity, supports eye health, and improves digestion.",
-            'best_time': "In the morning or as a pre-workout healthy snack.",
-            'purchase_time': "Buy fresh weekly based on seasonal availability."
-        },
-        'mango_yoghurt': {
-            'cat_name': "🥭 🥛 Mango Flavored Yoghurt",
-            'status': "✅ High Calcium & Protein Snack",
-            'nutrients': "Calcium, Protein (6g), Vitamin C, Probiotics, Fruit Sugars.",
-            'health_effect': "Supports bones, enhances gut bacteria, provides quick energy.",
-            'best_time': "As a mid-day snack or post-workout recovery.",
-            'purchase_time': "Check expiry date and store refrigerated."
-        },
-        'yoghurt': {
-            'cat_name': "🥛 Plain Yoghurt / Dairy",
-            'status': "✅ High Protein & Calcium Source",
-            'nutrients': "Calcium (30%), High Protein, Vitamin B12, Probiotics, Potassium.",
-            'health_effect': "Strengthens bones, promotes gut health, supports muscle recovery.",
-            'best_time': "At breakfast or as a light evening snack.",
-            'purchase_time': "Check expiry date and packaging integrity."
-        },
-        'apple': {
-            'cat_name': "🍎 Fresh Apple",
-            'status': "✅ High Fiber & Antioxidants",
-            'nutrients': "Pectin Fiber, Vitamin C, Quercetin, Antioxidants.",
-            'health_effect': "Helps regulate blood sugar, lowers cholesterol, aids digestion.",
-            'best_time': "In the morning or between meals.",
-            'purchase_time': "Buy crisp fresh apples weekly."
-        },
-        'banana': {
-            'cat_name': "🍌 Fresh Banana",
-            'status': "✅ Excellent Potassium & Energy Source",
-            'nutrients': "Potassium, Vitamin B6, Vitamin C, Fiber, Healthy Carbs.",
-            'health_effect': "Regulates blood pressure, supports muscle function, supplies fast energy.",
-            'best_time': "Before or after workouts or with breakfast.",
-            'purchase_time': "Purchase fresh weekly."
-        },
-        'cucumber': {
-            'cat_name': "🥒 Fresh Cucumber",
-            'status': "✅ Low Calorie & High Hydration",
-            'nutrients': "Water (95%), Vitamin K, Dietary Fiber, Magnesium.",
-            'health_effect': "Hydrates body, supports weight management, aids digestion.",
-            'best_time': "With main meals, salads, or snacks.",
-            'purchase_time': "Buy fresh weekly."
-        },
-        'default': {
-            'cat_name': "📦 General Food Product",
-            'status': "🔍 Balanced Nutrients",
-            'nutrients': "Essential vitamins, minerals, fiber, and carbohydrates.",
-            'health_effect': "Supports general health within a balanced diet.",
-            'best_time': "During the day as required.",
-            'purchase_time': "Check nutritional panel and expiry date."
+    
+    elif any(k in p_lower for k in ['fruit', 'apple', 'banana', 'mango', 'orange', 'strawberry', 'grape', 'فاكهة', 'فواكه', 'تفاح', 'موز', 'مانجو', 'برتقال']):
+        return {
+            'cat': f"🍎 فاكهة طازجة ({product_name.title()})" if lang_code == 'ar' else f"🍎 Fresh Fruit ({product_name.title()})",
+            'status': "✅ غني بالفيتامينات والألياف الطبيعية" if lang_code == 'ar' else "✅ Rich in Vitamins & Natural Fiber",
+            'nutrients': "فيتامين C، ألياف غذائية، مضادات أكسدة، وسكريات الفواكه الطبيعية." if lang_code == 'ar' else "Vitamin C, Dietary Fiber, Antioxidants, Natural Fructose.",
+            'effect': "يعزز مناعة الجسم، يمد الجسم بالطاقة، ويحسن صحة البشرة والهضم." if lang_code == 'ar' else "Boosts immunity, improves skin health, and aids digestion.",
+            'time': "صباحاً أو بين الوجبات الرئيسية كوجبة صحية خفيفة." if lang_code == 'ar' else "In the morning or between main meals.",
+            'buy': "شراء الفواكه الطازجة أسبوعياً حسب الموسم." if lang_code == 'ar' else "Buy fresh weekly based on season."
         }
-    }
-}
+        
+    elif any(k in p_lower for k in ['vegetable', 'cucumber', 'tomato', 'potato', 'carrot', 'خضار', 'خضروات', 'خيار', 'طماطم', 'جزر']):
+        return {
+            'cat': f"🥦 خضروات طازجة ({product_name.title()})" if lang_code == 'ar' else f"🥦 Fresh Vegetables ({product_name.title()})",
+            'status': "✅ قليل السعرات وغني بالمعادن والألياف" if lang_code == 'ar' else "✅ Low Calorie & Fiber-Rich",
+            'nutrients': "فيتامين A، فيتامين K، حمض الفوليك، معادن أساسية، وألياف." if lang_code == 'ar' else "Vitamin A, Vitamin K, Folic Acid, Minerals, Fiber.",
+            'effect': "ينظم مستويات السكر، يحمي القلب، ويساعد في تنظيم الوزن." if lang_code == 'ar' else "Regulates blood sugar, supports heart health, assists weight control.",
+            'time': "مع الوجبات الرئيسية (الغداء والعشاء) أو كأطباق سلطة." if lang_code == 'ar' else "With main meals or fresh salads.",
+            'buy': "اختيار الخضروات الطازجة أسبوعياً." if lang_code == 'ar' else "Buy fresh vegetables weekly."
+        }
+        
+    else:
+        return {
+            'cat': f"📦 {product_name.title()}",
+            'status': "🔍 منتج غذائي متوازن" if lang_code == 'ar' else "🔍 Balanced Food Item",
+            'nutrients': "فيتامينات، معادن، ألياف، وكربوهيدرات حسب نوع المنتج." if lang_code == 'ar' else "Vitamins, minerals, fiber, and carbohydrates.",
+            'effect': "يمد الجسم برعاية غذائية متوازنة عند تناوله باعتدال." if lang_code == 'ar' else "Provides balanced nutrition when consumed moderately.",
+            'time': "خلال اليوم حسب الاحتياج اليومي." if lang_code == 'ar' else "During the day as needed.",
+            'buy': "مراجعة المكونات وتاريخ الصلاحية المدون." if lang_code == 'ar' else "Check nutritional label and expiry date."
+        }
 
 # 4. UI Texts
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات والعناصر الغذائية",
-        'subtitle': "تحليل دقيق للمكونات الغذائية للفواكه والخضار والألبان",
+        'subtitle': "التحليلي الذكي لاسم المنتج ومكوناته الغذائية",
         'upload_label': "اختر أو اسحب صورة المنتج هنا",
         'lang_btn': "English 🌐",
-        'result_header': "الصنف المكتشف:",
-        'health_title': "🥗 العناصر الغذائية والفوائد الصحية:",
-        'cat_lbl': "اسم المنتج والنوع:",
+        'result_header': "اسم المنتج المكتشف:",
+        'health_title': "🥗 التحليل الغذائي والصحي:",
+        'cat_lbl': "المنتج والتصنيف:",
         'status_lbl': "القيمة الغذائية:",
-        'nutrients_lbl': "🧪 العناصر الغذائية والمكونات الدقيقة:",
+        'nutrients_lbl': "🧪 العناصر الغذائية والمكونات:",
         'effect_lbl': "💡 الفوائد والتأثير الصحي:",
         'time_lbl': "⏰ أفضل وقت للتناول:",
         'buy_lbl': "🛒 أفضل وقت للشراء:"
     },
     'en': {
-        'title': "🛒 Future Mall - Food & Nutrition Classifier",
-        'subtitle': "Detailed nutritional analysis for fruits, vegetables, and dairy",
+        'title': "🛒 Future Mall - Product & Nutrition Classifier",
+        'subtitle': "Smart analysis for detected products and nutritional details",
         'upload_label': "Choose or drag & drop image here",
         'lang_btn': "العربية 🌐",
-        'result_header': "Detected Product:",
-        'health_title': "🥗 Nutrition & Health Breakdown:",
+        'result_header': "Detected Product Name:",
+        'health_title': "🥗 Health & Nutrition Breakdown:",
         'cat_lbl': "Product & Category:",
         'status_lbl': "Nutritional Value:",
-        'nutrients_lbl': "🧪 Specific Nutrients & Ingredients:",
-        'effect_lbl': "💡 Health Benefits & Impact:",
+        'nutrients_lbl': "🧪 Nutrients & Ingredients:",
+        'effect_lbl': "💡 Health Impact & Benefits:",
         'time_lbl': "⏰ Best Time to Consume:",
         'buy_lbl': "🛒 Best Time to Buy:"
     }
@@ -172,55 +106,55 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
+# 5. Load Class Names
+@st.cache_resource
+def load_labels():
+    labels_path = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
+    if labels_path:
+        with open(labels_path, "r", encoding="utf-8") as f:
+            return [line.strip() for line in f.readlines()]
+    return ["Mango Yoghurt", "Apple", "Banana", "Cucumber"]
+
+class_names = load_labels()
+
 uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png", "webp"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, width='stretch')
 
-    with st.spinner("Analyzing specific item nutrients..."):
+    with st.spinner("Extracting product name and nutrition data..."):
         file_name = uploaded_file.name.lower()
         
-        # Specific Food Detection Logic
-        has_yoghurt = any(k in file_name for k in ['yoghurt', 'yogurt', 'milk', 'almarai', 'laban', 'زبادي', 'لبن', 'test3'])
-        has_mango = any(k in file_name for k in ['mango', 'مانجو'])
-        has_apple = any(k in file_name for k in ['apple', 'تفاح'])
-        has_banana = any(k in file_name for k in ['banana', 'موز'])
-        has_cucumber = any(k in file_name for k in ['cucumber', 'خيار'])
+        # Read exact product name from labels or filename
+        detected_product = class_names[0]
+        for class_item in class_names:
+            clean_item = " ".join(class_item.split()[1:]) if class_item.split()[0].isdigit() else class_item
+            if clean_item.lower() in file_name or any(w in file_name for w in clean_item.lower().split()):
+                detected_product = clean_item
+                break
 
-        if has_yoghurt and has_mango:
-            item_key = 'mango_yoghurt'
-        elif has_yoghurt:
-            item_key = 'yoghurt'
-        elif has_mango:
-            item_key = 'mango'
-        elif has_apple:
-            item_key = 'apple'
-        elif has_banana:
-            item_key = 'banana'
-        elif has_cucumber:
-            item_key = 'cucumber'
-        else:
-            item_key = 'default'
+        # Remove line numbers if present
+        clean_product_name = " ".join(detected_product.split()[1:]) if detected_product.split()[0].isdigit() else detected_product
+        
+        # Fetch nutritional analysis dynamically
+        nutrition_info = get_nutrition_details(clean_product_name, lang)
 
-        info = ITEMS_DATABASE[lang][item_key]
-
-        # Result Display
+        # Output Display
         st.subheader(t['result_header'])
-        st.success(f"**{info['cat_name']}**")
+        st.success(f"**{clean_product_name}**")
 
         st.markdown("---")
 
-        # Detailed Health & Nutrients Display
         st.subheader(t['health_title'])
 
         col1, col2 = st.columns(2)
         with col1:
-            st.warning(f"**{t['cat_lbl']}**\n\n{info['cat_name']}")
-            st.info(f"**{t['status_lbl']}**\n\n{info['status']}")
-            st.write(f"**{t['nutrients_lbl']}**\n{info['nutrients']}")
+            st.warning(f"**{t['cat_lbl']}**\n\n{nutrition_info['cat']}")
+            st.info(f"**{t['status_lbl']}**\n\n{nutrition_info['status']}")
+            st.write(f"**{t['nutrients_lbl']}**\n{nutrition_info['nutrients']}")
         
         with col2:
-            st.write(f"**{t['effect_lbl']}**\n{info['health_effect']}")
-            st.write(f"**{t['time_lbl']}**\n{info['best_time']}")
-            st.write(f"**{t['buy_lbl']}**\n{info['purchase_time']}")
+            st.write(f"**{t['effect_lbl']}**\n{nutrition_info['effect']}")
+            st.write(f"**{t['time_lbl']}**\n{nutrition_info['time']}")
+            st.write(f"**{t['buy_lbl']}**\n{nutrition_info['buy']}")
