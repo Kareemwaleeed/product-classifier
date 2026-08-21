@@ -2,6 +2,7 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 
 # 1. Page Configuration
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
@@ -17,23 +18,15 @@ def toggle_language():
 CATEGORIES_INFO = {
     'ar': {
         'Dairy': {
-            'cat_name': "🥛 زبادي ومنتجات ألبان (Dairy Yoghurt)",
+            'cat_name': "🥛 زبادي ومنتجات ألبان (Dairy)",
             'status': "✅ مفيد ومغذي",
             'nutrients': "كالسيوم، بروتين، فيتامين B12، بروبيوتيك.",
             'health_effect': "يعزز صحة العظام والأسنان ويحسن الهضم.",
             'best_time': "في الفطور أو كوجبة خفيفة قبل النوم.",
             'purchase_time': "تأكد من تاريخ الصلاحية والتبريد."
         },
-        'Fruit_Dairy': {
-            'cat_name': "🥭 🥛 زبادي بنكهة الفواكه (Fruit Yoghurt)",
-            'status': "✅ طاقة ومذاق مغذي",
-            'nutrients': "كالسيوم، بروتين، فيتامين C، وسكريات الفاكهة.",
-            'health_effect': "يمد الجسم بالكالسيوم والطاقة السريعة.",
-            'best_time': "كوجبة خفيفة بين الوجبات أو بعد التمرين.",
-            'purchase_time': "تأكد من تاريخ الصلاحية ونسبة السكر."
-        },
         'Fruits': {
-            'cat_name': "🍎 فواكه طازجة (Fresh Fruits)",
+            'cat_name': "🍎 فواكه طازجة (Fruits)",
             'status': "✅ صحي جداً وطبيعي",
             'nutrients': "فيتامين C، ألياف، مضادات أكسدة.",
             'health_effect': "يمد الجسم بالطاقة والمناعة ويحسن صحة البشرة والهضم.",
@@ -41,20 +34,12 @@ CATEGORIES_INFO = {
             'purchase_time': "شراء الفواكه طازجة أسبوعياً."
         },
         'Vegetables': {
-            'cat_name': "🥦 خضروات طازجة (Fresh Vegetables)",
+            'cat_name': "🥦 خضروات طازجة (Vegetables)",
             'status': "✅ غني بالألياف وقليل السعرات",
             'nutrients': "فيتامينات A, K، ألياف ومعادن.",
             'health_effect': "ينظم السكر في الدم ويساعد في الهضم والرشاقة.",
             'best_time': "مع الوجبات الرئيسية.",
             'purchase_time': "شراء طازج أسبوعياً."
-        },
-        'Default': {
-            'cat_name': "📦 منتج عام (General Product)",
-            'status': "🔍 خيار متوازن",
-            'nutrients': "عناصر غذائية متنوعة.",
-            'health_effect': "يُستهلك باعتدال ضمن نظام غذائي متوازن.",
-            'best_time': "خلال اليوم حسب الحاجة.",
-            'purchase_time': "فحص تاريخ الإنتاج والمكونات."
         }
     },
     'en': {
@@ -65,14 +50,6 @@ CATEGORIES_INFO = {
             'health_effect': "Strengthens bones & supports digestive health.",
             'best_time': "At breakfast or as a light evening snack.",
             'purchase_time': "Check expiry date and keep refrigerated."
-        },
-        'Fruit_Dairy': {
-            'cat_name': "🥭 🥛 Fruit Flavored Yoghurt",
-            'status': "✅ Nutritious & Energy Rich",
-            'nutrients': "Calcium, Protein, Vitamin C, Fruit Sugars.",
-            'health_effect': "Provides quick energy and calcium; prefer low-sugar options.",
-            'best_time': "As a mid-day snack or post-workout.",
-            'purchase_time': "Check expiry date and added sugar content."
         },
         'Fruits': {
             'cat_name': "🍎 Fresh Fruits",
@@ -89,14 +66,6 @@ CATEGORIES_INFO = {
             'health_effect': "Supports digestion and overall health.",
             'best_time': "With main meals.",
             'purchase_time': "Buy fresh weekly."
-        },
-        'Default': {
-            'cat_name': "📦 General Product",
-            'status': "🔍 Balanced Choice",
-            'nutrients': "Varied nutrients based on product type.",
-            'health_effect': "Consume in moderation within a balanced diet.",
-            'best_time': "During the day as needed.",
-            'purchase_time': "Check packaging seal and expiration date."
         }
     }
 }
@@ -108,7 +77,6 @@ TEXTS = {
         'subtitle': "تحليل المنتجات والتصنيف الصحي الدقيق",
         'upload_label': "اختر أو اسحب صورة المنتج هنا",
         'lang_btn': "English 🌐",
-        'model_error': "تأكد من وجود ملف labels.txt في المستودع",
         'result_header': "نتيجة التصنيف المكتشفة:",
         'health_title': "🥗 التحليل الصحي والتصنيف:",
         'cat_lbl': "القسم الرئيسي:",
@@ -123,7 +91,6 @@ TEXTS = {
         'subtitle': "Accurate product classification & health breakdown",
         'upload_label': "Choose or drag & drop image here",
         'lang_btn': "العربية 🌐",
-        'model_error': "Ensure labels.txt or labels exist in repository",
         'result_header': "Detected Classification:",
         'health_title': "🥗 Health Analysis & Nutrition:",
         'cat_lbl': "Category:",
@@ -142,16 +109,14 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 5. Load Label Names
+# Load AI Model & Labels
 @st.cache_resource
-def load_labels():
-    labels_path = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
-    if labels_path:
-        with open(labels_path, "r", encoding="utf-8") as f:
-            return [line.strip() for line in f.readlines()]
-    return ["Dairy Yoghurt", "Fresh Fruits", "Fresh Vegetables"]
+def load_ai_model():
+    if os.path.exists("keras_model.h5"):
+        return tf.keras.models.load_model("keras_model.h5")
+    return None
 
-class_names = load_labels()
+model = load_ai_model()
 
 uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png", "webp"])
 
@@ -159,37 +124,43 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, use_container_width=True)
 
-    with st.spinner("Analyzing image..."):
+    with st.spinner("Analyzing image features..."):
         file_name = uploaded_file.name.lower()
         
-        # Color distribution analysis
-        img_np = np.array(image.resize((100, 100)))
-        avg_white = np.mean(img_np > 200)
-        
-        # Keywords
-        is_dairy_keyword = any(k in file_name for k in ['yoghurt', 'yogurt', 'milk', 'almarai', 'laban', 'cheese', 'test3'])
-        is_fruit_keyword = any(k in file_name for k in ['mango', 'apple', 'banana', 'strawberry', 'fruit', 'تفاح', 'موز', 'مانجو', 'فواكه'])
-        is_veg_keyword = any(k in file_name for k in ['tomato', 'vegetable', 'cucumber', 'خيار', 'طماطم', 'خضار'])
-
-        # Fixed Classification Logic with correct priority
-        if is_dairy_keyword and is_fruit_keyword:
-            cat_key = 'Fruit_Dairy'
-            detected_label = "زبادي بنكهة الفواكه (Fruit Yoghurt)" if lang == 'ar' else "Fruit Flavored Yoghurt"
-        elif is_fruit_keyword:
-            cat_key = 'Fruits'
-            detected_label = "فواكه طازجة (Fresh Fruits)" if lang == 'ar' else "Fresh Fruits"
-        elif is_veg_keyword:
-            cat_key = 'Vegetables'
-            detected_label = "خضروات طازجة (Fresh Vegetables)" if lang == 'ar' else "Fresh Vegetables"
-        elif is_dairy_keyword:
-            cat_key = 'Dairy'
-            detected_label = "زبادي / منتجات ألبان (Dairy Yoghurt)" if lang == 'ar' else "Dairy / Yoghurt Product"
-        elif avg_white > 0.70:
-            cat_key = 'Dairy'
-            detected_label = "زبادي / منتجات ألبان (Dairy Yoghurt)" if lang == 'ar' else "Dairy / Yoghurt Product"
+        # 1. AI Model Prediction (If Model Exists)
+        if model is not None:
+            img_resized = image.resize((224, 224))
+            img_array = np.asarray(img_resized, dtype=np.float32) / 255.0
+            img_reshape = np.expand_dims(img_array, axis=0)
+            prediction = model.predict(img_reshape)
+            class_idx = np.argmax(prediction)
+            
+            # Map index to category
+            categories = ['Dairy', 'Fruits', 'Vegetables']
+            cat_key = categories[class_idx % len(categories)]
         else:
-            cat_key = 'Default'
-            detected_label = "منتج عام (General Product)" if lang == 'ar' else "General Product"
+            # 2. Smart Image Color & Name Fallback
+            img_np = np.array(image.resize((100, 100)))
+            r, g, b = img_np[:,:,0], img_np[:,:,1], img_np[:,:,2]
+            
+            # Green dominant = Vegetables / Red-Yellow dominant = Fruits / White dominant = Dairy
+            is_green = np.mean(g > r) > 0.45 and np.mean(g > b) > 0.45
+            is_white = np.mean(r > 200) > 0.4 and np.mean(g > 200) > 0.4 and np.mean(b > 200) > 0.4
+            
+            if "veg" in file_name or "tomato" in file_name or "cucumber" in file_name or is_green:
+                cat_key = 'Vegetables'
+            elif "dairy" in file_name or "milk" in file_name or "yoghurt" in file_name or is_white:
+                cat_key = 'Dairy'
+            else:
+                cat_key = 'Fruits'
+
+        labels_display = {
+            'Fruits': "فواكه طازجة (Fruits)" if lang == 'ar' else "Fresh Fruits",
+            'Vegetables': "خضروات طازجة (Vegetables)" if lang == 'ar' else "Fresh Vegetables",
+            'Dairy': "زبادي ومنتجات ألبان (Dairy)" if lang == 'ar' else "Dairy / Yoghurt"
+        }
+        
+        detected_label = labels_display[cat_key]
 
         # Result Display
         st.subheader(t['result_header'])
