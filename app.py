@@ -2,7 +2,6 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 
 # 1. Page Configuration
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
@@ -109,50 +108,32 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# Load AI Model & Labels
-@st.cache_resource
-def load_ai_model():
-    if os.path.exists("keras_model.h5"):
-        return tf.keras.models.load_model("keras_model.h5")
-    return None
-
-model = load_ai_model()
-
 uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png", "webp"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, use_container_width=True)
 
-    with st.spinner("Analyzing image features..."):
+    with st.spinner("Analyzing image colors..."):
         file_name = uploaded_file.name.lower()
         
-        # 1. AI Model Prediction (If Model Exists)
-        if model is not None:
-            img_resized = image.resize((224, 224))
-            img_array = np.asarray(img_resized, dtype=np.float32) / 255.0
-            img_reshape = np.expand_dims(img_array, axis=0)
-            prediction = model.predict(img_reshape)
-            class_idx = np.argmax(prediction)
-            
-            # Map index to category
-            categories = ['Dairy', 'Fruits', 'Vegetables']
-            cat_key = categories[class_idx % len(categories)]
+        # Analyze RGB channels directly from image pixels
+        img_np = np.array(image.resize((100, 100)))
+        r, g, b = img_np[:,:,0], img_np[:,:,1], img_np[:,:,2]
+        
+        # Color & Keyword Detection Logic
+        is_green = np.mean((g > r) & (g > b)) > 0.25
+        is_white_packaging = np.mean((r > 190) & (g > 190) & (b > 190)) > 0.45
+        
+        veg_keywords = ['veg', 'tomato', 'cucumber', 'خيار', 'طماطم', 'خضار']
+        dairy_keywords = ['dairy', 'milk', 'yoghurt', 'yogurt', 'almarai', 'laban', 'cheese', 'لبن', 'زبادي', 'جبنة']
+
+        if any(k in file_name for k in veg_keywords) or (is_green and not is_white_packaging):
+            cat_key = 'Vegetables'
+        elif any(k in file_name for k in dairy_keywords) or is_white_packaging:
+            cat_key = 'Dairy'
         else:
-            # 2. Smart Image Color & Name Fallback
-            img_np = np.array(image.resize((100, 100)))
-            r, g, b = img_np[:,:,0], img_np[:,:,1], img_np[:,:,2]
-            
-            # Green dominant = Vegetables / Red-Yellow dominant = Fruits / White dominant = Dairy
-            is_green = np.mean(g > r) > 0.45 and np.mean(g > b) > 0.45
-            is_white = np.mean(r > 200) > 0.4 and np.mean(g > 200) > 0.4 and np.mean(b > 200) > 0.4
-            
-            if "veg" in file_name or "tomato" in file_name or "cucumber" in file_name or is_green:
-                cat_key = 'Vegetables'
-            elif "dairy" in file_name or "milk" in file_name or "yoghurt" in file_name or is_white:
-                cat_key = 'Dairy'
-            else:
-                cat_key = 'Fruits'
+            cat_key = 'Fruits'
 
         labels_display = {
             'Fruits': "فواكه طازجة (Fruits)" if lang == 'ar' else "Fresh Fruits",
