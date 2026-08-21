@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import tensorflow as tf
+import tflite_runtime.interpreter as tflite
 
 # 1. إعداد الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
@@ -21,7 +21,7 @@ TEXTS = {
         'subtitle': "تحليل الصور، نسبة الثقة، والتحليل الصحي المفصل",
         'upload_label': "اختر أو اسحب صورة المنتج هنا",
         'lang_btn': "English 🌐",
-        'model_error': "لم يتم العثور على ملفات النموذج (keras_model.h5 أو labels.txt)",
+        'model_error': "لم يتم العثور على ملفات النموذج (model.tflite أو labels.txt)",
         'result_header': "نتيجة التصنيف:",
         'confidence': "نسبة الثقة:"
     },
@@ -30,7 +30,7 @@ TEXTS = {
         'subtitle': "Image analysis, confidence score, and detailed health breakdown",
         'upload_label': "Choose or drag & drop a product image here",
         'lang_btn': "العربية 🌐",
-        'model_error': "Model files not found (keras_model.h5 or labels.txt)",
+        'model_error': "Model files not found (model.tflite or labels.txt)",
         'result_header': "Classification Result:",
         'confidence': "Confidence Score:"
     }
@@ -42,20 +42,24 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 4. تحميل النموذج
+# 4. تحميل نموذج TFLite
 @st.cache_resource
-def load_teachable_model():
-    if os.path.exists("keras_model.h5") and (os.path.exists("labels.txt") or os.path.exists("labels")):
-        labels_file = "labels.txt" if os.path.exists("labels.txt") else "labels"
-        model = tf.keras.models.load_model("keras_model.h5", compile=False)
+def load_tflite_model():
+    labels_file = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
+    
+    if os.path.exists("model.tflite") and labels_file:
+        interpreter = tflite.Interpreter(model_path="model.tflite")
+        interpreter.allocate_tensors()
+        
         with open(labels_file, "r", encoding="utf-8") as f:
             class_names = [line.strip() for line in f.readlines()]
-        return model, class_names
+            
+        return interpreter, class_names
     return None, None
 
-model, class_names = load_teachable_model()
+interpreter, class_names = load_tflite_model()
 
-if model is None or class_names is None:
+if interpreter is None or class_names is None:
     st.error(t['model_error'])
 else:
     uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png"])
@@ -71,13 +75,18 @@ else:
         
         # التطبيع
         normalized_image = (image_array / 127.5) - 1.0
-        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-        data[0] = normalized_image
+        data = np.expand_dims(normalized_image, axis=0)
 
-        # التنبؤ
+        # التنبؤ بـ TFLite
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
         with st.spinner("جاري التحليل..." if st.session_state.lang == 'ar' else "Analyzing..."):
-            prediction = model.predict(data)
-            index = int(np.argmax(prediction))
+            interpreter.set_tensor(input_details[0]['index'], data)
+            interpreter.invoke()
+            prediction = interpreter.get_tensor(output_details[0]['index'])
+
+            index = int(np.argmax(prediction[0]))
             class_name = class_names[index]
             confidence_score = float(prediction[0][index]) * 100
 
