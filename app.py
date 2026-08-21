@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import tf_keras as keras
+from tensorflow import keras
 
 # ضبط إعدادات الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
