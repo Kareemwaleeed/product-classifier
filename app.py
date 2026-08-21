@@ -1,14 +1,5 @@
 import os
 import streamlit as st
-st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stAppDeployButton {display:none;}
-    [data-testid="stStatusWidget"] {visibility: hidden;}
-    </style>
-    """, unsafe_allow_html=True)
 import numpy as np
 from PIL import Image
 
