@@ -8,16 +8,58 @@ st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
 
 # 2. Language Management
 if 'lang' not in st.session_state:
-    st.session_state.lang = 'en'
+    st.session_state.lang = 'ar'
 
 def toggle_language():
-    st.session_state.lang = 'ar' if st.session_state.lang == 'en' else 'en'
+    st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
 # 3. Categories Health Database
 CATEGORIES_INFO = {
+    'ar': {
+        'Dairy': {
+            'cat_name': "🥛 زبادي ومنتجات ألبان (Dairy Yoghurt)",
+            'status': "✅ مفيد ومغذي",
+            'nutrients': "كالسيوم، بروتين، فيتامين B12، بروبيوتيك.",
+            'health_effect': "يعزز صحة العظام والأسنان ويحسن الهضم.",
+            'best_time': "في الفطور أو كوجبة خفيفة قبل النوم.",
+            'purchase_time': "تأكد من تاريخ الصلاحية والتبريد."
+        },
+        'Fruit_Dairy': {
+            'cat_name': "🥭 🥛 زبادي بنكهة الفواكه (Fruit Yoghurt)",
+            'status': "✅ طاقة ومذاق مغذي",
+            'nutrients': "كالسيوم، بروتين، فيتامين C، وسكريات الفاكهة.",
+            'health_effect': "يمد الجسم بالكالسيوم والطاقة السريعة.",
+            'best_time': "كوجبة خفيفة بين الوجبات أو بعد التمرين.",
+            'purchase_time': "تأكد من تاريخ الصلاحية ونسبة السكر."
+        },
+        'Fruits': {
+            'cat_name': "🍎 فواكه طازجة (Fresh Fruits)",
+            'status': "✅ صحي جداً وطبيعي",
+            'nutrients': "فيتامين C، ألياف، مضادات أكسدة.",
+            'health_effect': "يمد الجسم بالطاقة والمناعة ويحسن صحة البشرة والهضم.",
+            'best_time': "صباحاً أو بين الوجبات الرئيسية.",
+            'purchase_time': "شراء الفواكه طازجة أسبوعياً."
+        },
+        'Vegetables': {
+            'cat_name': "🥦 خضروات طازجة (Fresh Vegetables)",
+            'status': "✅ غني بالألياف وقليل السعرات",
+            'nutrients': "فيتامينات A, K، ألياف ومعادن.",
+            'health_effect': "ينظم السكر في الدم ويساعد في الهضم والرشاقة.",
+            'best_time': "مع الوجبات الرئيسية.",
+            'purchase_time': "شراء طازج أسبوعياً."
+        },
+        'Default': {
+            'cat_name': "📦 منتج عام (General Product)",
+            'status': "🔍 خيار متوازن",
+            'nutrients': "عناصر غذائية متنوعة.",
+            'health_effect': "يُستهلك باعتدال ضمن نظام غذائي متوازن.",
+            'best_time': "خلال اليوم حسب الحاجة.",
+            'purchase_time': "فحص تاريخ الإنتاج والمكونات."
+        }
+    },
     'en': {
         'Dairy': {
-            'cat_name': "🥛 Dairy Products",
+            'cat_name': "🥛 Dairy / Yoghurt Products",
             'status': "✅ Rich in Calcium & Protein",
             'nutrients': "Calcium, Protein, Vitamin B12, Probiotics.",
             'health_effect': "Strengthens bones & supports digestive health.",
@@ -25,7 +67,7 @@ CATEGORIES_INFO = {
             'purchase_time': "Check expiry date and keep refrigerated."
         },
         'Fruit_Dairy': {
-            'cat_name': "🥭 🥛 Fruit Flavored Dairy (Yoghurt)",
+            'cat_name': "🥭 🥛 Fruit Flavored Yoghurt",
             'status': "✅ Nutritious & Energy Rich",
             'nutrients': "Calcium, Protein, Vitamin C, Fruit Sugars.",
             'health_effect': "Provides quick energy and calcium; prefer low-sugar options.",
@@ -56,68 +98,11 @@ CATEGORIES_INFO = {
             'best_time': "During the day as needed.",
             'purchase_time': "Check packaging seal and expiration date."
         }
-    },
-    'ar': {
-        'Dairy': {
-            'cat_name': "🥛 ألبان ومنتجات الألبان (Dairy)",
-            'status': "✅ مفيد ومغذي",
-            'nutrients': "كالسيوم، بروتين، فيتامين B12، بروبيوتيك.",
-            'health_effect': "يعزز صحة العظام والأسنان ويحسن الهضم.",
-            'best_time': "في الفطور أو كوجبة خفيفة قبل النوم.",
-            'purchase_time': "تأكد من تاريخ الصلاحية والتبريد."
-        },
-        'Fruit_Dairy': {
-            'cat_name': "🥭 🥛 ألبان بنكهة الفواكه (Fruit Yoghurt)",
-            'status': "✅ طاقة ومذاق مغذي",
-            'nutrients': "كالسيوم، بروتين، فيتامين C، وسكريات الفاكهة.",
-            'health_effect': "يمد الجسم بالكالسيوم والطاقة السريعة.",
-            'best_time': "كوجبة خفيفة بين الوجبات أو بعد التمرين.",
-            'purchase_time': "تأكد من تاريخ الصلاحية ونسبة السكر."
-        },
-        'Fruits': {
-            'cat_name': "🍎 فواكه طازجة (Fruits)",
-            'status': "✅ صحي جداً وطبيعي",
-            'nutrients': "فيتامين C، ألياف، مضادات أكسدة.",
-            'health_effect': "يمد الجسم بالطاقة والمناعة ويحسن صحة البشرة والهضم.",
-            'best_time': "صباحاً أو بين الوجبات الرئيسية.",
-            'purchase_time': "شراء الفواكه طازجة أسبوعياً."
-        },
-        'Vegetables': {
-            'cat_name': "🥦 خضروات (Vegetables)",
-            'status': "✅ غني بالألياف وقليل السعرات",
-            'nutrients': "فيتامينات A, K، ألياف ومعادن.",
-            'health_effect': "ينظم السكر في الدم ويساعد في الهضم والرشاقة.",
-            'best_time': "مع الوجبات الرئيسية.",
-            'purchase_time': "شراء طازج أسبوعياً."
-        },
-        'Default': {
-            'cat_name': "📦 منتج عام",
-            'status': "🔍 خيار متوازن",
-            'nutrients': "عناصر غذائية متنوعة.",
-            'health_effect': "يُستهلك باعتدال ضمن نظام غذائي متوازن.",
-            'best_time': "خلال اليوم حسب الحاجة.",
-            'purchase_time': "فحص تاريخ الإنتاج والمكونات."
-        }
     }
 }
 
 # 4. UI Texts
 TEXTS = {
-    'en': {
-        'title': "🛒 Future Mall - Smart Product Classifier",
-        'subtitle': "Accurate product classification & health breakdown",
-        'upload_label': "Choose or drag & drop image here",
-        'lang_btn': "العربية 🌐",
-        'model_error': "Ensure labels.txt or labels exist in repository",
-        'result_header': "Detected Classification:",
-        'health_title': "🥗 Health Analysis & Nutrition:",
-        'cat_lbl': "Category:",
-        'status_lbl': "Health Status:",
-        'nutrients_lbl': "🧪 Nutrients & Ingredients:",
-        'effect_lbl': "💡 Benefits & Health Impact:",
-        'time_lbl': "⏰ Best Time to Consume:",
-        'buy_lbl': "🛒 Best Time to Buy:"
-    },
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
         'subtitle': "تحليل المنتجات والتصنيف الصحي الدقيق",
@@ -132,6 +117,21 @@ TEXTS = {
         'effect_lbl': "💡 الفوائد والتأثير الصحي:",
         'time_lbl': "⏰ أفضل وقت للتناول:",
         'buy_lbl': "🛒 أفضل وقت للشراء:"
+    },
+    'en': {
+        'title': "🛒 Future Mall - Smart Product Classifier",
+        'subtitle': "Accurate product classification & health breakdown",
+        'upload_label': "Choose or drag & drop image here",
+        'lang_btn': "العربية 🌐",
+        'model_error': "Ensure labels.txt or labels exist in repository",
+        'result_header': "Detected Classification:",
+        'health_title': "🥗 Health Analysis & Nutrition:",
+        'cat_lbl': "Category:",
+        'status_lbl': "Health Status:",
+        'nutrients_lbl': "🧪 Nutrients & Ingredients:",
+        'effect_lbl': "💡 Benefits & Health Impact:",
+        'time_lbl': "⏰ Best Time to Consume:",
+        'buy_lbl': "🛒 Best Time to Buy:"
     }
 }
 
@@ -149,7 +149,7 @@ def load_labels():
     if labels_path:
         with open(labels_path, "r", encoding="utf-8") as f:
             return [line.strip() for line in f.readlines()]
-    return ["Dairy", "Fruits", "Vegetables"]
+    return ["Dairy Yoghurt", "Fresh Fruits", "Fresh Vegetables"]
 
 class_names = load_labels()
 
@@ -172,13 +172,13 @@ if uploaded_file is not None:
         
         if is_dairy_keyword and is_fruit_keyword:
             cat_key = 'Fruit_Dairy'
-            detected_label = "Fruit Flavored Yoghurt"
+            detected_label = "زبادي بنكهة الفواكه (Fruit Yoghurt)" if lang == 'ar' else "Fruit Flavored Yoghurt"
         elif is_dairy_keyword or avg_white > 0.4:
             cat_key = 'Dairy'
-            detected_label = "Dairy / Yoghurt Product"
+            detected_label = "زبادي / منتجات ألبان (Dairy Yoghurt)" if lang == 'ar' else "Dairy / Yoghurt Product"
         elif is_fruit_keyword or "fruit" in [c.lower() for c in class_names]:
             cat_key = 'Fruits'
-            detected_label = "Fresh Fruits"
+            detected_label = "فواكه طازجة (Fresh Fruits)" if lang == 'ar' else "Fresh Fruits"
         else:
             cat_key = 'Vegetables' if any(k in file_name for k in ['tomato', 'vegetable', 'cucumber']) else 'Default'
             detected_label = class_names[0]
