@@ -1,7 +1,6 @@
 import streamlit as st
 from PIL import Image
-import requests
-import io
+from transformers import pipeline
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛒", layout="centered")
@@ -9,75 +8,51 @@ st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛒", layo
 st.title("مصنف المنتجات الذكي - Future Mall 🛒")
 st.caption("تحليل محتوى الصورة والتصنيف الصحيح الدقيق")
 
-# استخدام نموذج CLIP المقارن المباشر
-API_URL = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
+# 2. تحميل موديل الفرز المباشر (خفيف وبيميز بين الـ 3 فئات بدقة عالية جداً)
+@st.cache_resource
+def load_clip_classifier():
+    return pipeline("zero-shot-image-classification", model="openai/clip-vit-base-patch32")
 
-def classify_with_clip(image):
-    """إرسال الصورة ومقارنتها مباشرة بالفئات الثلاث"""
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    img_bytes = img_byte_arr.getvalue()
-    
-    # نطلب من النموذج المقارنة بين هذه النصوص المحددة فقط
-    payload = {
-        "inputs": {
-            "image": img_bytes.hex(), # تحويل الصورة للفرز
-        },
-        "parameters": {
-            "candidate_labels": [
-                "a photo of fresh fruits", 
-                "a photo of fresh vegetables", 
-                "a photo of dairy products like milk or yogurt or cheese"
-            ]
-        }
-    }
-    
-    try:
-        # استدعاء مباشر وسريع
-        response = requests.post(
-            "https://api-inference.huggingface.co/models/google/vit-base-patch16-224", 
-            data=img_bytes, 
-            timeout=10
-        )
-        results = response.json()
-        
-        if isinstance(results, list):
-            # تجميع الكلمات المفتاحية في الاستجابة
-            labels_text = " ".join([res.get('label', '').lower() for res in results])
-            
-            # 1. فحص الفواكه (بما فيها الفراولة وتنين والأنواع الغريبة)
-            fruit_indicators = ['fruit', 'apple', 'strawberry', 'banana', 'orange', 'berry', 'grape', 'mango', 'pitaya', 'dragon', 'melon', 'pineapple', 'pear', 'peach', 'lemon']
-            if any(ind in labels_text for ind in fruit_indicators):
-                return "(Fruits) فواكه"
-                
-            # 2. فحص الألبان والزبادي
-            dairy_indicators = ['milk', 'yogurt', 'cheese', 'butter', 'cream', 'dairy', 'carton', 'jug', 'bottle', 'ice cream', 'eggnog']
-            if any(ind in labels_text for ind in dairy_indicators):
-                return "(Dairy) زبادي ومنتجات ألبان"
-                
-            # 3. فحص الخضراوات
-            veg_indicators = ['cucumber', 'lettuce', 'vegetable', 'tomato', 'potato', 'carrot', 'onion', 'pepper', 'zucchini', 'cabbage', 'broccoli', 'squash']
-            if any(ind in labels_text for ind in veg_indicators):
-                return "(Vegetables) خضراوات"
+try:
+    classifier = load_clip_classifier()
+except Exception as e:
+    st.error("جاري تحميل الموديل، يرجى الانتظار قليلاً...")
+    classifier = None
 
-        # لو الصورة مش واضحة خالص هيرجع فواكه بدل تثبيت الخضار
+# الفئات الثلاث المطلوبة فقط باللغة الإنجليزية ليفهمها الذكاء الاصطناعي
+LABELS = [
+    "a photo of fresh fruits", 
+    "a photo of fresh vegetables", 
+    "a photo of dairy products like milk, yogurt, or cheese"
+]
+
+def classify_image(img):
+    if classifier is None:
+        return "جاري تحميل النموذج..."
+    
+    # الموديل بيقرأ الصورة ويقارنها بالتلات خيارات دول حصراً
+    results = classifier(img, candidate_labels=LABELS)
+    best_match = results[0]['label']
+    
+    if best_match == "a photo of fresh fruits":
         return "(Fruits) فواكه"
-        
-    except Exception:
+    elif best_match == "a photo of fresh vegetables":
         return "(Vegetables) خضراوات"
+    else:
+        return "(Dairy) زبادي ومنتجات ألبان"
 
-# 2. واجهة رفع الصورة
+# 3. واجهة رفع الصورة
 uploaded_file = st.file_uploader("اختر أو اسحب صورة المنتج هنا", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     
-    # عرض الصورة المرفوعة
+    # عرض الصورة فوراً
     st.image(image, use_container_width=True)
     
-    # تحليل الصورة
-    with st.spinner("جاري فحص محتوى الصورة..."):
-        result = classify_with_clip(image)
+    # تحليل محتوى الصورة
+    with st.spinner("جاري فحص الصورة بالذكاء الاصطناعي..."):
+        result = classify_image(image)
         
     st.markdown("---")
     st.markdown("### :نتيجة التصنيف المكتشفة")
