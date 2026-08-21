@@ -1,7 +1,6 @@
 import streamlit as st
-import numpy as np
-from PIL import Image, ImageOps
-import keras
+from PIL import Image
+from teachablemachine import TeachableMachine
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
 
@@ -24,15 +23,15 @@ TEXTS = {
         'health_title': "📊 التقييم والتحليل الصحي",
         'healthy': "🟢 منتج صحي مفيد",
         'unhealthy': "🔴 منتج غير صحي (يُفضل الاعتدال أو التجنب)",
-        'fruits_desc': "الفواكه غنية بالألياف، الفيتامينات، ومضادات الأكسدة الطبيعية. ممتازة للصحة العامة وتعزيز المناعة.",
-        'dairy_desc': "منتجات الألبان غنية بالكالسيوم والبروتين الممتاز لبناء العظام والأنسجة. يفضل اختيار الأنواع قليلة الدسم وغير المضافة بالسكر.",
-        'junk_desc': "يحتوي على نسبة عالية من السكريات، الدهون المتحولة، أو الملح. الاستهلاك المفرط يؤدي للسمنة ومشاكل الصحة.",
-        'general_desc': "تأكد دائماً من قراءة بطاقة المكونات والقيمة الغذائية المدونة على العبوة قبل الاستهلاك.",
+        'fruits_desc': "الفواكه غنية بالألياف والفيتامينات ومضادات الأكسدة. ممتازة للصحة العامة.",
+        'dairy_desc': "منتجات الألبان غنية بالكالسيوم والبروتين لبناء العظام والأنسجة.",
+        'junk_desc': "يحتوي على نسبة عالية من السكريات أو الدهون. الاستهلاك المفرط يؤدي لمشاكل صحية.",
+        'general_desc': "تأكد دائماً من قراءة بطاقة المكونات والقيمة الغذائية قبل الاستهلاك.",
         'error': "حدث خطأ أثناء قراءة الصورة، يرجى المحاولة بصورة أخرى."
     },
     'en': {
         'title': "🛍️ Smart Product Classifier - Future Mall",
-        'subtitle': "Upload any product image to get its class, confidence score, and detailed health assessment.",
+        'subtitle': "Upload any product image to get its class, confidence score, and health assessment.",
         'upload_label': "Choose or drag a product image here...",
         'uploaded_img': "Uploaded Image",
         'prediction': "Predicted Category",
@@ -40,11 +39,11 @@ TEXTS = {
         'health_title': "📊 Health & Nutritional Assessment",
         'healthy': "🟢 Healthy Product",
         'unhealthy': "🔴 Unhealthy Product (Consume in moderation)",
-        'fruits_desc': "Rich in natural fibers, vitamins, and antioxidants. Excellent for boosting immune health and digestion.",
-        'dairy_desc': "Great source of calcium and high-quality protein for bone health. Opt for low-fat and unsweetened versions.",
-        'junk_desc': "Contains high levels of sugars, trans fats, or sodium. Overconsumption may lead to obesity and health risks.",
-        'general_desc': "Always check the nutrition facts panel and ingredient list on the package before consuming.",
-        'error': "An error occurred while processing the image. Please try another one."
+        'fruits_desc': "Rich in natural fibers, vitamins, and antioxidants.",
+        'dairy_desc': "Great source of calcium and high-quality protein.",
+        'junk_desc': "Contains high levels of sugars or trans fats.",
+        'general_desc': "Always check the nutrition facts panel on the package.",
+        'error': "An error occurred while processing the image."
     }
 }
 
@@ -54,13 +53,11 @@ st.title(t['title'])
 st.write(t['subtitle'])
 
 @st.cache_resource
-def load_my_model():
-    return keras.models.load_model("keras_model.h5", compile=False)
+def load_model():
+    model = TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
+    return model
 
-model = load_my_model()
-
-with open("labels.txt", "r", encoding="utf-8") as f:
-    class_names = [line.strip() for line in f.readlines()]
+model = load_model()
 
 uploaded_file = st.file_uploader(
     t['upload_label'], 
@@ -72,23 +69,19 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption=t['uploaded_img'], use_container_width=True)
         
-        size = (224, 224)
-        image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-        image_array = np.asarray(image_resized)
-        normalized = (image_array.astype(np.float32) / 127.5) - 1.0
-        data = np.expand_dims(normalized, axis=0)
-
-        prediction = model.predict(data, verbose=0)
-        index = np.argmax(prediction)
-        predicted_class = class_names[index]
-        confidence = prediction[0][index] * 100
+        # حفظ وقتي للصورة للتنبؤ
+        image.save("temp_image.jpg")
+        
+        result = model.classify_image("temp_image.jpg")
+        predicted_class = result['class_name']
+        confidence = result['highest_class_confidence'] * 100
 
         st.markdown("---")
         st.success(f"**{t['prediction']}:** {predicted_class}")
         st.info(f"**{t['confidence']}:** {confidence:.2f}%")
 
         st.markdown(f"### {t['health_title']}")
-        category_lower = predicted_class.lower()
+        category_lower = str(predicted_class).lower()
 
         if "fruit" in category_lower or "vegetable" in category_lower:
             st.success(t['healthy'])
