@@ -1,55 +1,56 @@
 import streamlit as st
-import numpy as np
 from PIL import Image
+from transformers import pipeline
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛒", layout="centered")
 
 st.title("مصنف المنتجات الذكي - Future Mall 🛒")
-st.caption("تحليل المنتجات والتصنيف الصحيح الدقيق")
+st.caption("تحليل محتوى الصورة والتصنيف الصحيح الدقيق")
 
-# 2. قوائم الكلمات الدلالية للتصنيف
-FRUITS_KEYWORDS = [
-    'apple', 'banana', 'orange', 'strawberry', 'grape', 'mango', 'watermelon', 
-    'pineapple', 'peach', 'pear', 'cherry', 'kiwi', 'plum', 'pomegranate', 
-    'fig', 'lemon', 'lime', 'guava', 'melon', 'apricot', 'dates', 'fruit'
-]
+# 2. تحميل نموذج الذكاء الاصطناعي لفحص الصور محلياً
+@st.cache_resource
+def load_classifier():
+    # نموذج تصنيف صور سريع وخفيف جداً
+    return pipeline("image-classification", model="google/vit-base-patch16-224")
 
-VEGETABLES_KEYWORDS = [
-    'cucumber', 'lettuce', 'tomato', 'potato', 'carrot', 'onion', 'garlic', 
-    'pepper', 'capsicum', 'broccoli', 'cauliflower', 'spinach', 'zucchini', 
-    'eggplant', 'cabbage', 'corn', 'peas', 'green bean', 'radish', 'beetroot', 
-    'celery', 'parsley', 'pumpkin', 'vegetable'
-]
+classifier = load_classifier()
 
-DAIRY_KEYWORDS = [
-    'milk', 'yogurt', 'curd', 'cheese', 'butter', 'cream', 'laban', 'dairy'
-]
+# 3. قوائم الكلمات لتوجيه الفئات
+FRUITS = ['apple', 'banana', 'orange', 'strawberry', 'grape', 'mango', 'watermelon', 'pineapple', 'dragonfruit', 'fruit', 'pitaya', 'berry', 'peach', 'pear', 'lemon']
+VEGETABLES = ['cucumber', 'lettuce', 'tomato', 'potato', 'carrot', 'onion', 'garlic', 'pepper', 'zucchini', 'cabbage', 'broccoli', 'vegetable', 'squash']
+DAIRY = ['milk', 'yogurt', 'cheese', 'butter', 'cream', 'dairy', 'eggnog', 'ice cream']
 
-def classify_product(file_name: str) -> str:
-    """تصنيف تلقائي يضمن توجيه الخيار والخس والأجبان والفاكهة للفئات المطلوبة"""
-    name_clean = file_name.lower().strip()
+def predict_image_category(img):
+    # تحليل محتوى الصورة عبر الذكاء الاصطناعي
+    results = classifier(img)
     
-    if any(keyword in name_clean for keyword in FRUITS_KEYWORDS):
-        return "(Fruits) فواكه"
-    elif any(keyword in name_clean for keyword in DAIRY_KEYWORDS):
-        return "(Dairy) زبادي ومنتجات ألبان"
-    else:
-        # يرجع خضراوات افتراضياً لأي خضار مثل الخيار والخس
-        return "(Vegetables) خضراوات"
+    # فحص أفضل النتائج المكتشفة داخل الصورة
+    for item in results:
+        label = item['label'].lower()
+        if any(f in label for f in FRUITS):
+            return "(Fruits) فواكه"
+        elif any(v in label for v in VEGETABLES):
+            return "(Vegetables) خضراوات"
+        elif any(d in label for d in DAIRY):
+            return "(Dairy) زبادي ومنتجات ألبان"
+            
+    # لو الصورة خضار مشهور أو غير معرف
+    return "(Vegetables) خضراوات"
 
-# 3. رفع الصورة
+# 4. واجهة رفع الصورة
 uploaded_file = st.file_uploader("اختر أو اسحب صورة المنتج هنا", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    # عرض الصورة (استخدام use_container_width بدلاً من المعلمة القديمة)
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")
+    
+    # عرض الصورة فوراً
     st.image(image, use_container_width=True)
     
-    # تحديد النتيجة
-    result_category = classify_product(uploaded_file.name)
-    
-    # عرض النتيجة أسفل الصورة
+    # تحليل الصورة وعرض النتيجة
+    with st.spinner("جاري تحليل الصورة..."):
+        result = predict_image_category(image)
+        
     st.markdown("---")
     st.markdown("### :نتيجة التصنيف المكتشفة")
-    st.success(result_category)
+    st.success(result)
