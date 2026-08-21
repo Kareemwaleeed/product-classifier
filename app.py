@@ -1,22 +1,18 @@
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-from tensorflow import keras
+import keras
 
-# ضبط إعدادات الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
 
-# إدارة حالة اللغة (الافتراضي: العربية)
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# زر تغيير اللغة في الأعلى
 st.button("🌐 English / العربية", on_click=toggle_language)
 
-# النصوص المترجمة
 TEXTS = {
     'ar': {
         'title': "🛍️ مصنف المنتجات الذكي - Future Mall",
@@ -57,18 +53,15 @@ t = TEXTS[st.session_state.lang]
 st.title(t['title'])
 st.write(t['subtitle'])
 
-# تحميل النموذج مع التخزين المؤقت لسرعة الأداء
 @st.cache_resource
 def load_my_model():
     return keras.models.load_model("keras_model.h5", compile=False)
 
 model = load_my_model()
 
-# قراءة أسماء الفئات
 with open("labels.txt", "r", encoding="utf-8") as f:
     class_names = [line.strip() for line in f.readlines()]
 
-# دعم جميع صيغ الصور المعروفة
 uploaded_file = st.file_uploader(
     t['upload_label'], 
     type=["jpg", "jpeg", "png", "webp", "bmp", "tiff"]
@@ -79,14 +72,12 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption=t['uploaded_img'], use_container_width=True)
         
-        # تجهيز الصورة للنموذج
         size = (224, 224)
         image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized)
         normalized = (image_array.astype(np.float32) / 127.5) - 1.0
         data = np.expand_dims(normalized, axis=0)
 
-        # التنبؤ
         prediction = model.predict(data, verbose=0)
         index = np.argmax(prediction)
         predicted_class = class_names[index]
@@ -96,7 +87,6 @@ if uploaded_file is not None:
         st.success(f"**{t['prediction']}:** {predicted_class}")
         st.info(f"**{t['confidence']}:** {confidence:.2f}%")
 
-        # التحليل الصحي
         st.markdown(f"### {t['health_title']}")
         category_lower = predicted_class.lower()
 
