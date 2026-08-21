@@ -1,0 +1,3 @@
+0 Fruits
+1 Vegtables
+2 Dairy
