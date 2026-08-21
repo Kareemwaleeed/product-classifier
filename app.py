@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import onnxruntime as ort
+import urllib.request
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
 
@@ -16,8 +16,9 @@ st.button("🌐 English / العربية", on_click=toggle_language)
 TEXTS = {
     'ar': {
         'title': "🛍️ مصنف المنتجات الذكي - Future Mall",
-        'subtitle': "ارفع صورة أي منتج لمعرفة تصنيفه، نسبة الثقة، والتحليل الصحي المفصل.",
+        'subtitle': "ارفع صورة أي منتج أو ضع رابطها لمعرفة تصنيفه، نسبة الثقة، والتحليل الصحي المفصل.",
         'upload_label': "اختر أو اسحب صورة المنتج هنا...",
+        'url_label': "أو ضع رابط الصورة المباشر من الإنترنت:",
         'uploaded_img': "الصورة المرفوعة",
         'prediction': "المنتج المحدد",
         'confidence': "نسبة الثقة",
@@ -32,8 +33,9 @@ TEXTS = {
     },
     'en': {
         'title': "🛍️ Smart Product Classifier - Future Mall",
-        'subtitle': "Upload any product image to get its class, confidence score, and health assessment.",
+        'subtitle': "Upload any product image or paste its link to get its class, confidence score, and health assessment.",
         'upload_label': "Choose or drag a product image here...",
+        'url_label': "Or paste a direct image URL from the internet:",
         'uploaded_img': "Uploaded Image",
         'prediction': "Predicted Category",
         'confidence': "Confidence Level",
@@ -56,26 +58,42 @@ st.write(t['subtitle'])
 with open("labels.txt", "r", encoding="utf-8") as f:
     class_names = [line.strip() for line in f.readlines()]
 
+# رفع ملف أو إدخال رابط صورة من النت
 uploaded_file = st.file_uploader(
     t['upload_label'], 
-    type=["jpg", "jpeg", "png", "webp", "bmp", "tiff"]
+    type=["jpg", "jpeg", "png", "webp", "bmp", "tiff", "jfif"]
 )
+image_url = st.text_input(t['url_label'], placeholder="https://example.com/image.jpg")
 
+image = None
+
+# قراءة الصورة من الملف أو من الرابط
 if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+elif image_url:
     try:
-        image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption=t['uploaded_img'], use_container_width=True)
+        req = urllib.request.Request(image_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            image = Image.open(response)
+    except Exception:
+        st.error(t['error'])
+
+if image is not None:
+    try:
+        # تحويل الصورة لـ RGB لضمان قراءة كافة الصيغ المعقدة
+        image_rgb = image.convert("RGB")
+        st.image(image_rgb, caption=t['uploaded_img'], use_container_width=True)
         
         # تجهيز الصورة
         size = (224, 224)
-        image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+        image_resized = ImageOps.fit(image_rgb, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized)
         normalized = (image_array.astype(np.float32) / 127.5) - 1.0
         data = np.expand_dims(normalized, axis=0)
 
-        # استدعاء نموذج Keras مباشرة عبر PIL/Numpy
-        import keras
-        model = keras.models.load_model("keras_model.h5", compile=False)
+        # استدعاء نموذج Keras عبر tensorflow
+        import tensorflow as tf
+        model = tf.keras.models.load_model("keras_model.h5", compile=False)
         prediction = model.predict(data, verbose=0)
         
         index = np.argmax(prediction)
