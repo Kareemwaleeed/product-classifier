@@ -14,80 +14,87 @@ if 'lang' not in st.session_state:
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. قاعدة بيانات التحليل الصحي للمنتجات (تدرج فيها أسماء المنتجات كما هي في labels.txt)
+# 3. قاعدة البيانات الصحية والمكونات المغذية
 HEALTH_INFO = {
     'ar': {
         'default': {
-            'status': "🔍 خيار متوازن",
-            'health_effect': "يحتوي على عناصر غذائية مفيدة، يُنصح باستهلاكه كجزء من نظام غذائي متوازن.",
-            'best_time': "خلال النهار أو بين الوجبات الرئيسية.",
-            'purchase_time': "يفضل شراؤها طازجة أسبوعياً."
+            'status': "🔍 خيار متوازن ومغذي",
+            'nutrients': "فيتامين C، ألياف غذائية، مضادات أكسدة، وبوتاسيوم.",
+            'health_effect': "يمد الجسم بالطاقة الطبيعية، يعزز المناعة ويساعد على تحسين عملية الهضم.",
+            'best_time': "خلال الصباح أو كوجبة خفيفة بين الوجبات الرئيسية.",
+            'purchase_time': "يفضل شراؤها طازجة أسبوعياً للحفاظ على قيمتها الغذائية."
         },
-        # مثال لمنتجات الفواكه/الخضار (عدّل الاسم ليكون مطابق لـ labels.txt بالضبط)
         'Apple': {
-            'status': "✅ صحي جداً",
-            'health_effect': "غني بالألياف ومضادات الأكسدة، يساعد في تحسين الهضم وتعزيز صحة القلب.",
-            'best_time': "في الصباح على معدة فارغة أو كوجبة خفيفة (سناك) بين الوجبات.",
-            'purchase_time': "في مواسم حصادها أو طازجة أسبوعياً."
+            'status': "✅ صحي جداً غني بالمغذيات",
+            'nutrients': "فيتامين C، ألياف البكتين (Pectin)، مضادات الأكسدة (Quercetin)، وبوتاسيوم.",
+            'health_effect': "يحافظ على صحة القلب، يقلل الكوليسترول الضار، ويحسن عمل الجهاز الهضمي.",
+            'best_time': "في الصباح على معدة فارغة أو قبل التمارين الرياضية.",
+            'purchase_time': "خلال مواسم الحصاد أو عند التأكد من تماسك القشرة."
         },
-        'Chips': {
-            'status': "⚠️ غير صحي / غير موصى به بكثرة",
-            'health_effect': "يحتوي على نسبة عالية من الدهون والمقليات والصوديوم، كثرته تؤثر على الضغط والوزن.",
-            'best_time': "مرة واحدة كل فترة قصيرة تجنباً للآثار الجانبية، وتجنب أكلها ليلاً.",
-            'purchase_time': "عند الحاجة القصوى للمناسبات فقط."
+        'Banana': {
+            'status': "⚡ مصدـر ممتاـز للطاقة",
+            'nutrients': "بوتاسيوم، فيتامين B6، فيتامين C، ألياف، ومغنيسيوم.",
+            'health_effect': "ينظم ضغط الدم، يقلل من التقلصات العضلية، ويمد الجسم بطاقة سريعة.",
+            'best_time': "قبل أو بعد التمارين، أو كوجبة إفطار خفيفة.",
+            'purchase_time': "عندما تكون القشرة صفراء مع وجود بقع بنية خفيفة."
         }
     },
     'en': {
         'default': {
-            'status': "🔍 Balanced Choice",
-            'health_effect': "Contains good nutritional elements; consumes as part of a balanced diet.",
-            'best_time': "During the day or between main meals.",
-            'purchase_time': "Best purchased fresh weekly."
+            'status': "🔍 Balanced & Nutritious Choice",
+            'nutrients': "Vitamin C, Dietary Fiber, Antioxidants, and Potassium.",
+            'health_effect': "Provides natural energy, boosts immunity, and supports digestive health.",
+            'best_time': "In the morning or as a healthy mid-day snack.",
+            'purchase_time': "Best purchased fresh weekly to retain nutrition."
         },
         'Apple': {
-            'status': "✅ Highly Healthy",
-            'health_effect': "Rich in fiber and antioxidants, aids digestion and boosts heart health.",
-            'best_time': "In the morning on an empty stomach or as a mid-day snack.",
-            'purchase_time': "Fresh weekly during seasonal harvest."
+            'status': "✅ Highly Nutritious & Healthy",
+            'nutrients': "Vitamin C, Pectin Fiber, Quercetin Antioxidants, Potassium.",
+            'health_effect': "Supports heart health, lowers bad cholesterol, and improves digestion.",
+            'best_time': "In the morning on an empty stomach or before workouts.",
+            'purchase_time': "Fresh weekly when the skin is firm."
         },
-        'Chips': {
-            'status': "⚠️ Unhealthy / Consume Moderately",
-            'health_effect': "High in saturated fats and sodium; excessive intake leads to weight gain and high blood pressure.",
-            'best_time': "Occasionally, avoid eating late at night.",
-            'purchase_time': "Only for special occasions."
+        'Banana': {
+            'status': "⚡ Excellent Energy Booster",
+            'nutrients': "Potassium, Vitamin B6, Vitamin C, Dietary Fiber, Magnesium.",
+            'health_effect': "Regulates blood pressure, prevents muscle cramps, and supplies quick energy.",
+            'best_time': "Before/after exercise or as a quick breakfast snack.",
+            'purchase_time': "When yellow with light brown speckles."
         }
     }
 }
 
-# 4. النصوص العامة
+# 4. النصوص الواجهية
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
-        'subtitle': "تحليل الصور، نسبة الثقة، والتحليل الصحي المفصل",
-        'upload_label': "اختر أو اسحب صورة المنتج هنا",
+        'subtitle': "تحليل الصور، نسبة الثقة، القيمة الغذائية والتحليل الصحي",
+        'upload_label': "اختر أو اسحب صورة المنتج هنا (من الجهاز أو الإنترنت)",
         'lang_btn': "English 🌐",
         'model_error': "تأكد من وجود ملف keras_model.h5 وملف labels.txt في المستودع",
         'result_header': "نتيجة التصنيف:",
         'confidence': "نسبة الثقة:",
-        'health_title': "🥗 التحليل الصحي والتوصيات:",
+        'health_title': "🥗 التحليل الصحي والقيمة الغذائية:",
         'status_lbl': "الحالة الصحية:",
-        'effect_lbl': "التأثير الصحي:",
-        'time_lbl': "أفضل وقت للتناول:",
-        'buy_lbl': "أفضل وقت للشراء:"
+        'nutrients_lbl': "🧪 المواد الغذائية والفيتامينات:",
+        'effect_lbl': "💡 التأثير الصحي والفوائد:",
+        'time_lbl': "⏰ أفضل وقت للتناول:",
+        'buy_lbl': "🛒 أفضل وقت للشراء:"
     },
     'en': {
         'title': "🛒 Future Mall - Smart Product Classifier",
-        'subtitle': "Image analysis, confidence score, and detailed health breakdown",
+        'subtitle': "Image analysis, confidence score, nutrition & health breakdown",
         'upload_label': "Choose or drag & drop a product image here",
         'lang_btn': "العربية 🌐",
         'model_error': "Ensure keras_model.h5 and labels.txt exist in the repository",
         'result_header': "Classification Result:",
         'confidence': "Confidence Score:",
-        'health_title': "🥗 Health Analysis & Recommendations:",
+        'health_title': "🥗 Health Analysis & Nutritional Value:",
         'status_lbl': "Health Status:",
-        'effect_lbl': "Health Impact:",
-        'time_lbl': "Best Time to Consume:",
-        'buy_lbl': "Best Time to Buy:"
+        'nutrients_lbl': "🧪 Nutrients & Vitamins:",
+        'effect_lbl': "💡 Health Impact & Benefits:",
+        'time_lbl': "⏰ Best Time to Consume:",
+        'buy_lbl': "🛒 Best Time to Buy:"
     }
 }
 
@@ -98,7 +105,7 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 5. قراءة النموذج
+# 5. تحميل النموذج
 @st.cache_resource
 def load_model_data():
     model_path = "keras_model.h5"
@@ -115,7 +122,7 @@ model_path, class_names = load_model_data()
 if model_path is None or class_names is None:
     st.error(t['model_error'])
 else:
-    uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png", "webp"])
 
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
@@ -128,7 +135,7 @@ else:
         normalized_image = (image_array / 127.5) - 1.0
         input_data = np.expand_dims(normalized_image, axis=0)
 
-        with st.spinner("جاري التحليل..." if lang == 'ar' else "Analyzing..."):
+        with st.spinner("جاري التحليل واستخراج العناصر الغذائية..." if lang == 'ar' else "Analyzing & extracting nutrients..."):
             try:
                 with h5py.File(model_path, 'r') as f:
                     seed_val = int(np.sum(input_data * 100) % 100000)
@@ -138,26 +145,25 @@ else:
                 index = int(np.argmax(scores))
                 raw_class_name = class_names[index]
                 
-                # تنظيف اسم الفئة (حذف الأرقام مثل "0 Apple" ليصبح "Apple")
                 clean_class_name = " ".join(raw_class_name.split()[1:]) if raw_class_name.split()[0].isdigit() else raw_class_name
                 confidence_score = float(scores[index]) * 100
 
-                # عرض النتيجة الرئيسية
+                # عرض اسم المنتج
                 st.subheader(t['result_header'])
                 st.success(f"**{clean_class_name}**")
                 st.write(f"{t['confidence']} **{confidence_score:.2f}%**")
 
                 st.markdown("---")
 
-                # 6. عرض قسم التحليل الصحي
+                # عرض المكونات والمواد المغذية
                 st.subheader(t['health_title'])
                 
-                # البحث عن تفاصيل المنتج أو استخدام الافتراضي
                 product_info = HEALTH_INFO[lang].get(clean_class_name, HEALTH_INFO[lang]['default'])
 
                 col1, col2 = st.columns(2)
                 with col1:
                     st.info(f"**{t['status_lbl']}**\n\n{product_info['status']}")
+                    st.write(f"**{t['nutrients_lbl']}**\n{product_info['nutrients']}")
                     st.write(f"**{t['effect_lbl']}**\n{product_info['health_effect']}")
                 
                 with col2:
@@ -165,4 +171,4 @@ else:
                     st.write(f"**{t['buy_lbl']}**\n{product_info['purchase_time']}")
 
             except Exception as e:
-                st.error(f"Error reading model: {e}")
+                st.error(f"Error analyzing image: {e}")
