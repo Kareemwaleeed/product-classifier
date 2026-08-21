@@ -1,185 +1,170 @@
 import os
 import streamlit as st
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
+import tensorflow as tf
 
 # 1. Page Configuration
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
 
-# 2. Language Management
+# 2. Language State Management
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. Intelligent Visual Recognition (Color & Shape Analysis)
-def detect_product_visually(image, file_name):
-    clean_name = file_name.lower().replace("_", " ").replace("-", " ")
-    
-    # Check filename first if it contains explicit words
-    if any(k in clean_name for k in ['dragon', 'تنين', 'pitaya']):
-        return 'dragon_fruit'
-    elif any(k in clean_name for k in ['banana', 'موز']):
-        return 'banana'
-    elif any(k in clean_name for k in ['mango', 'مانجو']):
-        return 'mango'
-    elif any(k in clean_name for k in ['yoghurt', 'yogurt', 'زبادي', 'milk', 'لبن', 'almarai']):
-        return 'yoghurt'
-
-    # If filename is random codes/numbers -> Analyze Image Colors Visually!
-    img_resized = image.resize((100, 100))
-    img_np = np.array(img_resized)
-    
-    r = img_np[:, :, 0].astype(float)
-    g = img_np[:, :, 1].astype(float)
-    b = img_np[:, :, 2].astype(float)
-
-    # Detect Pink / Magenta dominant colors (Dragon Fruit)
-    pink_pixels = np.sum((r > 130) & (b > 100) & (r > g * 1.2))
-    
-    # Detect Yellow dominant colors (Banana / Mango)
-    yellow_pixels = np.sum((r > 150) & (g > 140) & (b < 100))
-
-    # Detect White / Bright packaging (Yoghurt)
-    white_pixels = np.sum((r > 200) & (g > 200) & (b > 200))
-
-    total_pixels = 100 * 100
-
-    if pink_pixels / total_pixels > 0.12:
-        return 'dragon_fruit'
-    elif yellow_pixels / total_pixels > 0.20:
-        return 'banana'
-    elif white_pixels / total_pixels > 0.35:
-        return 'yoghurt'
-    else:
-        return 'dragon_fruit' # Default match for exotic fruit images
-
-# 4. Detailed Nutrition Database
-NUTRITION_DATA = {
-    'dragon_fruit': {
+# 3. Main 3 Categories Database (Dairy, Fruits, Vegetables)
+CATEGORY_DB = {
+    'dairy': {
         'ar': {
-            'name': "فاكهة التنين (Dragon Fruit)",
-            'status': "✅ غني بمضادات الأكسدة وقليل السعرات",
-            'nutrients': "فيتامين C، ألياف غذائية، إلكتروليتات، ماء، ومضادات أكسدة (بتالاين).",
-            'effect': "يقوي المناعة، يرطب الجسم، ويحسن صحة الجهاز الهضمي.",
-            'time': "صباحاً أو كوجبة خفيفة منعشة خلال اليوم.",
-            'buy': "شراء الثمار الطازجة ذات اللون الساطع."
-        },
-        'en': {
-            'name': "Dragon Fruit",
-            'status': "✅ Low Calorie & High Antioxidants",
-            'nutrients': "Vitamin C, Dietary Fiber, Electrolytes, Betalain Antioxidants.",
-            'effect': "Boosts immunity, hydrates the body, and improves digestion.",
-            'time': "In the morning or as a refreshing mid-day snack.",
-            'buy': "Buy fresh bright-colored fruits."
-        }
-    },
-    'banana': {
-        'ar': {
-            'name': "موز (Banana)",
-            'status': "✅ طاقة سريعة وغني بالبوتاسيوم",
-            'nutrients': "بوتاسيوم، فيتامين B6، فيتامين C، وألياف.",
-            'effect': "يمد الجسم بالطاقة، ينظم ضغط الدم، ويمنع الشد العضلي.",
-            'time': "قبل أو بعد التمرين الرياضي أو مع الإفطار.",
-            'buy': "شراء الموز المتماسك أسبوعياً."
-        },
-        'en': {
-            'name': "Banana",
-            'status': "✅ Quick Energy & High Potassium",
-            'nutrients': "Potassium, Vitamin B6, Vitamin C, Dietary Fiber.",
-            'effect': "Supplies fast energy and regulates blood pressure.",
-            'time': "Before/after workouts or with breakfast.",
-            'buy': "Buy firm fresh bananas weekly."
-        }
-    },
-    'yoghurt': {
-        'ar': {
-            'name': "زبادي / منتجات ألبان (Yoghurt / Dairy)",
+            'name': "منتجات الألبان والزبادي (Dairy)",
             'status': "✅ غني بالبروتين والكالسيوم",
-            'nutrients': "كالسيوم، بروتين، فيتامين B12، بروبيوتيك (بكتيريا نافعة).",
-            'effect': "يقوي العظام والأسنان ويحسن صحة الهضم والمعدة.",
-            'time': "في الفطور أو كوجبة خفيفة قبل النوم.",
-            'buy': "تأكد من تاريخ الصلاحية والتبريد."
+            'nutrients': "كالسيوم، بروتين، فيتامين B12، وبروبيوتيك (بكتيريا نافعة).",
+            'effect': "يقوي العظام والأسنان ويحسن صحة الجهاز الهضمي والمعدة.",
+            'time': "في وجبة الإفطار أو كوجبة خفيفة قبل النوم.",
+            'buy': "تأكد من تاريخ الصلاحية وحفظ المنتج مبرداً."
         },
         'en': {
-            'name': "Yoghurt / Dairy Product",
-            'status': "✅ High Calcium & Protein",
-            'nutrients': "Calcium, Protein, Vitamin B12, Probiotics.",
-            'effect': "Strengthens bones and improves digestive health.",
-            'time': "At breakfast or before sleep.",
-            'buy': "Check expiration date and keep refrigerated."
+            'name': "Dairy & Yoghurt Products",
+            'status': "✅ Rich in Calcium & Protein",
+            'nutrients': "Calcium, Protein, Vitamin B12, and Probiotics.",
+            'effect': "Strengthens bones and improves digestive & gut health.",
+            'time': "At breakfast or as a light snack before bed.",
+            'buy': "Check expiration date and keep properly refrigerated."
+        }
+    },
+    'fruits': {
+        'ar': {
+            'name': "فواكه طازجة (Fruits)",
+            'status': "✅ غنية بالفيتامينات والألياف الطبيعية",
+            'nutrients': "فيتامين C، ألياف غذائية، معادن، ومضادات أكسدة طبيعية.",
+            'effect': "تعزز جهاز المناعة، تمد الجسم بالطاقة، وترطب الخلايا.",
+            'time': "صباحاً، بين الوجبات الرئيسية، أو قبل/بعد التمرين.",
+            'buy': "اختر الثمار الطازجة والزاهية أسبوعياً."
+        },
+        'en': {
+            'name': "Fresh Fruits",
+            'status': "✅ Rich in Vitamins & Natural Fiber",
+            'nutrients': "Vitamin C, Dietary Fiber, Minerals, and Antioxidants.",
+            'effect': "Boosts immunity, provides natural energy, and hydrates.",
+            'time': "In the morning, between meals, or around workouts.",
+            'buy': "Choose fresh and colorful fruits weekly."
+        }
+    },
+    'vegetables': {
+        'ar': {
+            'name': "خضروات طازجة (Vegetables)",
+            'status': "✅ قليل السعرات وغني بالمعادن",
+            'nutrients': "ألياف، حديد، بوتاسيوم، فيتامين A، وفيتامين K.",
+            'effect': "يحسن صحة القلب، يساعد في ضبط الوزن، وينظم الهضم.",
+            'time': "مع الوجبات الرئيسية أو في السلطات الطازجة.",
+            'buy': "شراء الخضروات الطازجة والمتماسكة بشكل دوري."
+        },
+        'en': {
+            'name': "Fresh Vegetables",
+            'status': "✅ Low Calorie & Mineral-Rich",
+            'nutrients': "Fiber, Iron, Potassium, Vitamin A, and Vitamin K.",
+            'effect': "Supports heart health, aids digestion, and helps weight control.",
+            'time': "With main lunch/dinner meals or fresh salads.",
+            'buy': "Buy crisp and fresh vegetables regularly."
         }
     }
 }
 
-# 5. UI Strings
+# 4. UI Texts
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
-        'subtitle': "التحليل البصري الذكي للتعرف على اسم المنتج ومكوناته",
-        'upload_label': "اختر أو اسحب صورة المنتج هنا",
-        'lang_btn': "English 🌐",
-        'result_header': "اسم المنتج المكتشف بالتحديد:",
-        'health_title': "🥗 العناصر الغذائية الخاصة بالمنتج:",
-        'cat_lbl': "المنتج المكتشف:",
-        'status_lbl': "القيمة الغذائية:",
-        'nutrients_lbl': "🧪 العناصر والمكونات الغذائية:",
-        'effect_lbl': "💡 الفوائد والتأثير الصحي:",
-        'time_lbl': "⏰ أفضل وقت للتناول:",
-        'buy_lbl': "🛒 أفضل وقت للشراء:"
+        'subtitle': "تصنيف المنتجات إلى (ألبان - فواكه - خضروات) وعرض القيمة الغذائية",
+        'upload': "اختر أو اسحب صورة المنتج هنا",
+        'btn': "English 🌐",
+        'result_header': "تصنيف المنتج المكتشف:",
+        'health_title': "🥗 العناصر القيمة للقسم:"
     },
     'en': {
         'title': "🛒 Future Mall - Smart Product Classifier",
-        'subtitle': "Visual recognition for exact product name & nutrition",
-        'upload_label': "Choose or drag & drop image here",
-        'lang_btn': "العربية 🌐",
-        'result_header': "Exact Detected Product Name:",
-        'health_title': "🥗 Specific Nutrition Breakdown:",
-        'cat_lbl': "Detected Product:",
-        'status_lbl': "Nutritional Value:",
-        'nutrients_lbl': "🧪 Specific Nutrients:",
-        'effect_lbl': "💡 Benefits & Health Impact:",
-        'time_lbl': "⏰ Best Time to Consume:",
-        'buy_lbl': "🛒 Best Time to Buy:"
+        'subtitle': "Classify products into (Dairy - Fruits - Vegetables)",
+        'upload': "Choose or drop product image here",
+        'btn': "العربية 🌐",
+        'result_header': "Detected Category:",
+        'health_title': "🥗 Category Nutrition Breakdown:"
     }
 }
 
 lang = st.session_state.lang
 t = TEXTS[lang]
 
-st.button(t['lang_btn'], on_click=toggle_language)
+# Top Bar Language Switcher
+st.button(t['btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png", "webp"])
+# 5. Load AI Model
+@st.cache_resource
+def load_ai_model():
+    model_path = "keras_model.h5"
+    labels_path = "labels.txt" if os.path.exists("labels.txt") else "labels"
+    
+    if os.path.exists(model_path) and os.path.exists(labels_path):
+        model = tf.keras.models.load_model(model_path, compile=False)
+        with open(labels_path, "r", encoding="utf-8") as f:
+            labels = [line.strip() for line in f.readlines()]
+        return model, labels
+    return None, None
+
+model, class_names = load_ai_model()
+
+# 6. Upload & Process
+uploaded_file = st.file_uploader(t['upload'], type=["jpg", "jpeg", "png", "webp"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
     st.image(image, width='stretch')
 
-    with st.spinner("Analyzing image colors and feature patterns..."):
-        file_name = uploaded_file.name
-        
-        # Visually recognize product
-        item_key = detect_product_visually(image, file_name)
-        nutrition = NUTRITION_DATA[item_key][lang]
+    if model is not None and class_names is not None:
+        with st.spinner("جاري تحليل التصنيف..."):
+            # Image Preprocessing
+            size = (224, 224)
+            image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+            image_array = np.asarray(image_resized)
+            normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+            data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+            data[0] = normalized_image_array
 
-        # Display exact name
-        st.subheader(t['result_header'])
-        st.success(f"**{nutrition['name']}**")
+            # Prediction
+            prediction = model.predict(data)
+            index = np.argmax(prediction)
+            raw_label = class_names[index].lower()
 
-        st.markdown("---")
+            # Map raw model output to the 3 main keys
+            category_key = 'fruits'
+            if 'dairy' in raw_label or 'milk' in raw_label or 'yog' in raw_label:
+                category_key = 'dairy'
+            elif 'veg' in raw_label or 'خضار' in raw_label:
+                category_key = 'vegetables'
+            elif 'fruit' in raw_label or 'فاكه' in raw_label:
+                category_key = 'fruits'
 
-        st.subheader(t['health_title'])
+            info = CATEGORY_DB[category_key][lang]
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.warning(f"**{t['cat_lbl']}**\n\n{nutrition['name']}")
-            st.info(f"**{t['status_lbl']}**\n\n{nutrition['status']}")
-            st.write(f"**{t['nutrients_lbl']}**\n{nutrition['nutrients']}")
-        
-        with col2:
-            st.write(f"**{t['effect_lbl']}**\n{nutrition['effect']}")
-            st.write(f"**{t['time_lbl']}**\n{nutrition['time']}")
-            st.write(f"**{t['buy_lbl']}**\n{nutrition['buy']}")
+            # Display Result
+            st.subheader(t['result_header'])
+            st.success(f"**{info['name']}**")
+
+            st.markdown("---")
+
+            st.subheader(t['health_title'])
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.warning(f"**التصنيف:** {info['name']}" if lang == 'ar' else f"**Category:** {info['name']}")
+                st.info(f"**القيمة الغذائية:** {info['status']}" if lang == 'ar' else f"**Value:** {info['status']}")
+                st.write(f"**المكونات:** {info['nutrients']}" if lang == 'ar' else f"**Nutrients:** {info['nutrients']}")
+            
+            with col2:
+                st.write(f"**الفوائد:** {info['effect']}" if lang == 'ar' else f"**Benefits:** {info['effect']}")
+                st.write(f"**أفضل وقت:** {info['time']}" if lang == 'ar' else f"**Best Time:** {info['time']}")
+                st.write(f"**نصيحة الشراء:** {info['buy']}" if lang == 'ar' else f"**Buying Tip:** {info['buy']}")
+    else:
+        st.error("تأكد من وجود ملفات keras_model.h5 و labels.txt في مجلد المشروع.")
