@@ -2,19 +2,19 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-from teachablemachine import TeachableMachine
+import tensorflow as tf
 
 # 1. إعداد الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
 
-# 2. إدارة اللغة في الجلسة
+# 2. إدارة اللغة
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. نصوص الواجهة باللغتين
+# 3. النصوص
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
@@ -38,49 +38,49 @@ TEXTS = {
 
 t = TEXTS[st.session_state.lang]
 
-# 4. زر تغيير اللغة
 st.button(t['lang_btn'], on_click=toggle_language)
-
-# 5. العناوين
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 6. تحميل النموذج
+# 4. تحميل النموذج والأسماء
 @st.cache_resource
-def load_model():
+def load_teachable_model():
     if os.path.exists("keras_model.h5") and os.path.exists("labels.txt"):
-        return TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
-    return None
+        model = tf.keras.models.load_model("keras_model.h5", compile=False)
+        with open("labels.txt", "r", encoding="utf-8") as f:
+            class_names = [line.strip() for line in f.readlines()]
+        return model, class_names
+    return None, None
 
-model = load_model()
+model, class_names = load_teachable_model()
 
-if model is None:
+if model is None or class_names is None:
     st.error(t['model_error'])
 else:
-    # 7. رفع الصورة ومعالجتها (مُحدثة بدون أخطاء Deprecation)
     uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
-        
-        # عرض الصورة باستخدام المعيار الحديث بدلاً من use_container_width
         st.image(image, width='stretch')
 
-        # حفظ الصورة مؤقتاً للتنبؤ
-        temp_path = "temp_image.jpg"
-        image.save(temp_path)
+        # تجهيز الصورة لتناسب نموذج Teachable Machine (224x224)
+        size = (224, 224)
+        image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+        image_array = np.asarray(image_resized)
+        
+        # التطبيع (Normalization)
+        normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+        data[0] = normalized_image_array
 
-        with st.spinner("..." if st.session_state.lang == 'en' else "جاري التحليل..."):
-            result = model.classify_image(temp_path)
+        # التنبؤ
+        with st.spinner("جاري التحليل..." if st.session_state.lang == 'ar' else "Analyzing..."):
+            prediction = model.predict(data)
+            index = np.argmax(prediction)
+            class_name = class_names[index]
+            confidence_score = float(prediction[0][index]) * 100
 
-        # إزالة الملف المؤقت
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
-        # 8. عرض النتائج
+        # عرض النتيجة
         st.subheader(t['result_header'])
-        class_name = result.get('highest_class_id', 'Unknown')
-        confidence = result.get('highest_class_confidence', 0.0) * 100
-
         st.success(f"**{class_name}**")
-        st.write(f"{t['confidence']} **{confidence:.2f}%**")
+        st.write(f"{t['confidence']} **{confidence_score:.2f}%**")
