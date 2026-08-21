@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
 import urllib.request
+from teachablemachine import TeachableMachine
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
 
@@ -55,8 +56,11 @@ t = TEXTS[st.session_state.lang]
 st.title(t['title'])
 st.write(t['subtitle'])
 
-with open("labels.txt", "r", encoding="utf-8") as f:
-    class_names = [line.strip() for line in f.readlines()]
+@st.cache_resource
+def load_model():
+    return TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
+
+model = load_model()
 
 # رفع ملف أو إدخال رابط صورة من النت
 uploaded_file = st.file_uploader(
@@ -80,37 +84,27 @@ elif image_url:
 
 if image is not None:
     try:
-        # تحويل الصورة لـ RGB لضمان قراءة كافة الصيغ المعقدة
         image_rgb = image.convert("RGB")
         st.image(image_rgb, caption=t['uploaded_img'], use_container_width=True)
         
-        # تجهيز الصورة
-        size = (224, 224)
-        image_resized = ImageOps.fit(image_rgb, size, Image.Resampling.LANCZOS)
-        image_array = np.asarray(image_resized)
-        normalized = (image_array.astype(np.float32) / 127.5) - 1.0
-        data = np.expand_dims(normalized, axis=0)
-
-        # استدعاء نموذج Keras عبر tensorflow
-        import tensorflow as tf
-        model = tf.keras.models.load_model("keras_model.h5", compile=False)
-        prediction = model.predict(data, verbose=0)
+        # حفظ الصورة مؤقتاً للتنبؤ
+        image_rgb.save("temp_input.jpg")
         
-        index = np.argmax(prediction)
-        predicted_class = class_names[index]
-        confidence = prediction[0][index] * 100
+        result = model.classify_image("temp_input.jpg")
+        predicted_class = result['class_name']
+        confidence = result['highest_class_confidence'] * 100
 
         st.markdown("---")
         st.success(f"**{t['prediction']}:** {predicted_class}")
         st.info(f"**{t['confidence']}:** {confidence:.2f}%")
 
         st.markdown(f"### {t['health_title']}")
-        category_lower = predicted_class.lower()
+        category_lower = str(predicted_class).lower()
 
         if "fruit" in category_lower or "vegetable" in category_lower:
             st.success(t['healthy'])
             st.write(t['fruits_desc'])
-        elif "dairy" in category_lower or "milk" in category_lower:
+        elif "dairy" in category_lower or "milk" in category_lower or "yoghurt" in category_lower:
             st.success(t['healthy'])
             st.write(t['dairy_desc'])
         else:
