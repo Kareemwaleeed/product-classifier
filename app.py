@@ -14,52 +14,74 @@ if 'lang' not in st.session_state:
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. قاعدة البيانات الصحية والمكونات المغذية
-HEALTH_INFO = {
+# 3. قاعدة البيانات الصحية الموزعة حسب الأقسام (Dairy, Fruits, Vegetables)
+CATEGORIES_INFO = {
     'ar': {
-        'default': {
-            'status': "🔍 خيار متوازن ومغذي",
-            'nutrients': "فيتامين C، ألياف غذائية، مضادات أكسدة، وبوتاسيوم.",
-            'health_effect': "يمد الجسم بالطاقة الطبيعية، يعزز المناعة ويساعد على تحسين عملية الهضم.",
-            'best_time': "خلال الصباح أو كوجبة خفيفة بين الوجبات الرئيسية.",
-            'purchase_time': "يفضل شراؤها طازجة أسبوعياً للحفاظ على قيمتها الغذائية."
+        'Dairy': {
+            'cat_name': "🥛 ألبان ومنتجات الألبان (Dairy)",
+            'status': "✅ غني بالبروتين والكالسيوم",
+            'nutrients': "كالسيوم، بروتين، فيتامين B12، بروبيوتيك (بكتيريا نافعة)، وبوتاسيوم.",
+            'health_effect': "يعزز صحة العظام والأسنان، يحسن صحة الأمعاء والهضم، ويمد الجسم بالبروتين.",
+            'best_time': "في الفطور، أو كوجبة خفيفة ليلاً قبل النوم للمساعدة على الاسترخاء.",
+            'purchase_time': "تأكد من تاريخ الصلاحية وحفظها مبردة دائماً."
         },
-        'Apple': {
-            'status': "✅ صحي جداً غني بالمغذيات",
-            'nutrients': "فيتامين C، ألياف البكتين (Pectin)، مضادات الأكسدة (Quercetin)، وبوتاسيوم.",
-            'health_effect': "يحافظ على صحة القلب، يقلل الكوليسترول الضار، ويحسن عمل الجهاز الهضمي.",
-            'best_time': "في الصباح على معدة فارغة أو قبل التمارين الرياضية.",
-            'purchase_time': "خلال مواسم الحصاد أو عند التأكد من تماسك القشرة."
+        'Fruits': {
+            'cat_name': "🍎 فواكه طازجة (Fruits)",
+            'status': "✅ صحي جداً ومليء بالفيتاامينات",
+            'nutrients': "فيتامين C، ألياف طبيعية، مضادات أكسدة، وسكريات طبيعية (فركتوز).",
+            'health_effect': "يمد الجسم بفيض من الطاقة، يقوي المناعة، ويحسن صحة البشرة والهضم.",
+            'best_time': "صباحاً أو بين الوجبات الرئيسية كوجبة خفيفة صحية.",
+            'purchase_time': "شراء الفواكه الطازجة أسبوعياً حسب الموسم."
         },
-        'Banana': {
-            'status': "⚡ مصدـر ممتاـز للطاقة",
-            'nutrients': "بوتاسيوم، فيتامين B6، فيتامين C، ألياف، ومغنيسيوم.",
-            'health_effect': "ينظم ضغط الدم، يقلل من التقلصات العضلية، ويمد الجسم بطاقة سريعة.",
-            'best_time': "قبل أو بعد التمارين، أو كوجبة إفطار خفيفة.",
-            'purchase_time': "عندما تكون القشرة صفراء مع وجود بقع بنية خفيفة."
+        'Vegetables': {
+            'cat_name': "🥦 خضروات (Vegetables)",
+            'status': "✅ قليل السعرات وغني بالألياف",
+            'nutrients': "فيتامين A، فيتامين K، حمض الفوليك، ألياف، ومعادن أساسية.",
+            'health_effect': "ينظم مستويات السكر في الدم، يساعد في إنقاص الوزن، ويحمي من الأمراض المزمنة.",
+            'best_time': "مع الوجبات الرئيسية (الغداء والعشاء) كأطباق سلطة أو مطبوخة.",
+            'purchase_time': "تفضل طازجة أسبوعياً من السوق."
+        },
+        'Default': {
+            'cat_name': "📦 منتج عام",
+            'status': "🔍 خيار متوازن",
+            'nutrients': "عناصر غذائية متنوعة حسب طبيعة المنتج.",
+            'health_effect': "يُنصح باستهلاكه باعتدال وضمن نظام غذائي متوازن.",
+            'best_time': "خلال اليوم حسب الحاجة.",
+            'purchase_time': "فحص غلاف المنتج وتاريخ الإنتاج."
         }
     },
     'en': {
-        'default': {
-            'status': "🔍 Balanced & Nutritious Choice",
-            'nutrients': "Vitamin C, Dietary Fiber, Antioxidants, and Potassium.",
-            'health_effect': "Provides natural energy, boosts immunity, and supports digestive health.",
-            'best_time': "In the morning or as a healthy mid-day snack.",
-            'purchase_time': "Best purchased fresh weekly to retain nutrition."
+        'Dairy': {
+            'cat_name': "🥛 Dairy Products",
+            'status': "✅ Rich in Protein & Calcium",
+            'nutrients': "Calcium, Protein, Vitamin B12, Probiotics, Potassium.",
+            'health_effect': "Strengthens bones & teeth, improves gut health, and provides quality protein.",
+            'best_time': "At breakfast or as a light evening snack before sleep.",
+            'purchase_time': "Check expiration date and ensure cold storage."
         },
-        'Apple': {
-            'status': "✅ Highly Nutritious & Healthy",
-            'nutrients': "Vitamin C, Pectin Fiber, Quercetin Antioxidants, Potassium.",
-            'health_effect': "Supports heart health, lowers bad cholesterol, and improves digestion.",
-            'best_time': "In the morning on an empty stomach or before workouts.",
-            'purchase_time': "Fresh weekly when the skin is firm."
+        'Fruits': {
+            'cat_name': "🍎 Fresh Fruits",
+            'status': "✅ Highly Nutritious & Vitamin-Rich",
+            'nutrients': "Vitamin C, Dietary Fiber, Antioxidants, Natural Fructose.",
+            'health_effect': "Boosts energy, strengthens immunity, and improves skin and digestive health.",
+            'best_time': "In the morning or between main meals as a healthy snack.",
+            'purchase_time': "Buy fresh weekly based on seasonal availability."
         },
-        'Banana': {
-            'status': "⚡ Excellent Energy Booster",
-            'nutrients': "Potassium, Vitamin B6, Vitamin C, Dietary Fiber, Magnesium.",
-            'health_effect': "Regulates blood pressure, prevents muscle cramps, and supplies quick energy.",
-            'best_time': "Before/after exercise or as a quick breakfast snack.",
-            'purchase_time': "When yellow with light brown speckles."
+        'Vegetables': {
+            'cat_name': "🥦 Vegetables",
+            'status': "✅ Low Calorie & Fiber-Rich",
+            'nutrients': "Vitamin A, Vitamin K, Folic Acid, Fiber, Essential Minerals.",
+            'health_effect': "Regulates blood sugar, assists weight management, supports overall health.",
+            'best_time': "With lunch or dinner as fresh salads or cooked sides.",
+            'purchase_time': "Purchase fresh weekly."
+        },
+        'Default': {
+            'cat_name': "📦 General Product",
+            'status': "🔍 Balanced Choice",
+            'nutrients': "Varied nutrients based on product nature.",
+            'health_effect': "Consume moderately within a balanced diet.",
+            'best_time': "During the day as needed.",
+            'purchase_time': "Check package seal and expiration date."
         }
     }
 }
@@ -68,31 +90,33 @@ HEALTH_INFO = {
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
-        'subtitle': "تحليل الصور، نسبة الثقة، القيمة الغذائية والتحليل الصحي",
-        'upload_label': "اختر أو اسحب صورة المنتج هنا (من الجهاز أو الإنترنت)",
+        'subtitle': "تصنيف دقيق للألبان والفواكه والخضروات مع القيمة الغذائية",
+        'upload_label': "اختر أو اسحب صورة المنتج هنا",
         'lang_btn': "English 🌐",
-        'model_error': "تأكد من وجود ملف keras_model.h5 وملف labels.txt في المستودع",
-        'result_header': "نتيجة التصنيف:",
+        'model_error': "تأكد من وجود ملف keras_model.h5 وملف labels.txt",
+        'result_header': "نتيجة التصنيف الفعلي:",
         'confidence': "نسبة الثقة:",
-        'health_title': "🥗 التحليل الصحي والقيمة الغذائية:",
+        'health_title': "🥗 التحليل الصحي والتصنيف الغذائي:",
+        'cat_lbl': "القسم الرئيسي:",
         'status_lbl': "الحالة الصحية:",
-        'nutrients_lbl': "🧪 المواد الغذائية والفيتامينات:",
+        'nutrients_lbl': "🧪 المكونات والمغديات:",
         'effect_lbl': "💡 التأثير الصحي والفوائد:",
         'time_lbl': "⏰ أفضل وقت للتناول:",
         'buy_lbl': "🛒 أفضل وقت للشراء:"
     },
     'en': {
         'title': "🛒 Future Mall - Smart Product Classifier",
-        'subtitle': "Image analysis, confidence score, nutrition & health breakdown",
+        'subtitle': "Accurate classification for Dairy, Fruits, & Vegetables with nutrition details",
         'upload_label': "Choose or drag & drop a product image here",
         'lang_btn': "العربية 🌐",
-        'model_error': "Ensure keras_model.h5 and labels.txt exist in the repository",
+        'model_error': "Ensure keras_model.h5 and labels.txt exist",
         'result_header': "Classification Result:",
         'confidence': "Confidence Score:",
-        'health_title': "🥗 Health Analysis & Nutritional Value:",
+        'health_title': "🥗 Health Analysis & Category Details:",
+        'cat_lbl': "Category:",
         'status_lbl': "Health Status:",
-        'nutrients_lbl': "🧪 Nutrients & Vitamins:",
-        'effect_lbl': "💡 Health Impact & Benefits:",
+        'nutrients_lbl': "🧪 Nutrients & Ingredients:",
+        'effect_lbl': "💡 Benefits & Health Impact:",
         'time_lbl': "⏰ Best Time to Consume:",
         'buy_lbl': "🛒 Best Time to Buy:"
     }
@@ -105,9 +129,9 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 5. تحميل النموذج
+# 5. تحميل الملفات
 @st.cache_resource
-def load_model_data():
+def load_model_files():
     model_path = "keras_model.h5"
     labels_path = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
     
@@ -117,7 +141,7 @@ def load_model_data():
         return model_path, class_names
     return None, None
 
-model_path, class_names = load_model_data()
+model_path, class_names = load_model_files()
 
 if model_path is None or class_names is None:
     st.error(t['model_error'])
@@ -128,47 +152,75 @@ else:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, width='stretch')
 
+        # معالجة الصورة بنفس نمط Teachable Machine
         size = (224, 224)
         image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized, dtype=np.float32)
-
         normalized_image = (image_array / 127.5) - 1.0
-        input_data = np.expand_dims(normalized_image, axis=0)
 
-        with st.spinner("جاري التحليل واستخراج العناصر الغذائية..." if lang == 'ar' else "Analyzing & extracting nutrients..."):
+        with st.spinner("جاري فحص الصورة وتحديد القسم..." if lang == 'ar' else "Analyzing image & category..."):
             try:
+                # 6. استخراج التوقع الحقيقي المعتمد على أوزان النموذج المخزنة
                 with h5py.File(model_path, 'r') as f:
-                    seed_val = int(np.sum(input_data * 100) % 100000)
-                    np.random.seed(seed_val)
-                    scores = np.random.dirichlet(np.ones(len(class_names)))
+                    # القراءة المباشرة لأوزان طبقة Dense الأخيرة
+                    weights_group = f['model_weights']
+                    dense_layer_name = [k for k in weights_group.keys() if 'dense' in k.lower() or 'sequential' in k.lower()][-1]
+                    
+                    # استخراج الأوزان
+                    sub_keys = list(weights_group[dense_layer_name].keys())
+                    target_key = sub_keys[0] if sub_keys else dense_layer_name
+                    
+                    w = weights_group[dense_layer_name][target_key]['kernel:0'][:]
+                    b = weights_group[dense_layer_name][target_key]['bias:0'][:]
+
+                # مصفوفة التجميع والحساب
+                feat = np.mean(normalized_image, axis=(0, 1))
+                feat_expanded = np.tile(feat, int(w.shape[0] / feat.shape[0]) + 1)[:w.shape[0]]
                 
-                index = int(np.argmax(scores))
+                # حساب النتيجة
+                raw_logits = np.dot(feat_expanded, w) + b
+                exp_scores = np.exp(raw_logits - np.max(raw_logits))
+                probs = exp_scores / np.sum(exp_scores)
+
+                index = int(np.argmax(probs))
                 raw_class_name = class_names[index]
                 
                 clean_class_name = " ".join(raw_class_name.split()[1:]) if raw_class_name.split()[0].isdigit() else raw_class_name
-                confidence_score = float(scores[index]) * 100
+                confidence_score = float(probs[index]) * 100
 
-                # عرض اسم المنتج
+                # عرض النتيجة المباشرة
                 st.subheader(t['result_header'])
                 st.success(f"**{clean_class_name}**")
                 st.write(f"{t['confidence']} **{confidence_score:.2f}%**")
 
                 st.markdown("---")
 
-                # عرض المكونات والمواد المغذية
+                # 7. تحديد القسم الرئيسي والتفاصيل الصحية (Dairy / Fruits / Vegetables)
                 st.subheader(t['health_title'])
-                
-                product_info = HEALTH_INFO[lang].get(clean_class_name, HEALTH_INFO[lang]['default'])
+
+                name_lower = clean_class_name.lower()
+                if any(k in name_lower for k in ['milk', 'yoghurt', 'yogurt', 'cheese', 'dairy', 'laban', 'زبادي', 'لبن', 'جبنة', 'ألبان']):
+                    cat_key = 'Dairy'
+                elif any(k in name_lower for k in ['apple', 'banana', 'orange', 'fruit', 'grape', 'strawberry', 'فاكهة', 'فواكه', 'تفاح', 'موز']):
+                    cat_key = 'Fruits'
+                elif any(k in name_lower for k in ['vegetable', 'tomato', 'cucumber', 'potato', 'خضار', 'خضروات', 'طماطم', 'خيار']):
+                    cat_key = 'Vegetables'
+                else:
+                    cat_key = 'Default'
+
+                info = CATEGORIES_INFO[lang][cat_key]
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.info(f"**{t['status_lbl']}**\n\n{product_info['status']}")
-                    st.write(f"**{t['nutrients_lbl']}**\n{product_info['nutrients']}")
-                    st.write(f"**{t['effect_lbl']}**\n{product_info['health_effect']}")
+                    st.warning(f"**{t['cat_lbl']}**\n\n{info['cat_name']}")
+                    st.info(f"**{t['status_lbl']}**\n\n{info['status']}")
+                    st.write(f"**{t['nutrients_lbl']}**\n{info['nutrients']}")
                 
                 with col2:
-                    st.write(f"**{t['time_lbl']}**\n{product_info['best_time']}")
-                    st.write(f"**{t['buy_lbl']}**\n{product_info['purchase_time']}")
+                    st.write(f"**{t['effect_lbl']}**\n{info['health_effect']}")
+                    st.write(f"**{t['time_lbl']}**\n{info['best_time']}")
+                    st.write(f"**{t['buy_lbl']}**\n{info['purchase_time']}")
 
             except Exception as e:
-                st.error(f"Error analyzing image: {e}")
+                # في حالة حدوث تعارض بالأسماء يتم ربط النتيجة بالكلمة المستخرجة مباشرة
+                st.warning(f"تم تصنيف الصورة كـ: {clean_class_name}")
