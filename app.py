@@ -1,117 +1,86 @@
+import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import urllib.request
 from teachablemachine import TeachableMachine
 
-st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
+# 1. إعداد الصفحة
+st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
 
+# 2. إدارة اللغة في الجلسة
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-st.button("🌐 English / العربية", on_click=toggle_language)
-
+# 3. نصوص الواجهة باللغتين
 TEXTS = {
     'ar': {
-        'title': "🛍️ مصنف المنتجات الذكي - Future Mall",
-        'subtitle': "ارفع صورة أي منتج أو ضع رابطها لمعرفة تصنيفه، نسبة الثقة، والتحليل الصحي المفصل.",
-        'upload_label': "اختر أو اسحب صورة المنتج هنا...",
-        'url_label': "أو ضع رابط الصورة المباشر من الإنترنت:",
-        'uploaded_img': "الصورة المرفوعة",
-        'prediction': "المنتج المحدد",
-        'confidence': "نسبة الثقة",
-        'health_title': "📊 التقييم والتحليل الصحي",
-        'healthy': "🟢 منتج صحي مفيد",
-        'unhealthy': "🔴 منتج غير صحي (يُفضل الاعتدال أو التجنب)",
-        'fruits_desc': "الفواكه والخضروات غنية بالألياف، الفيتامينات، ومضادات الأكسدة. ممتازة للصحة العامة.",
-        'dairy_desc': "منتجات الألبان غنية بالكالسيوم والبروتين الممتاز لبناء العظام والأنسجة.",
-        'junk_desc': "يحتوي على نسبة عالية من السكريات أو الدهون. الاستهلاك المفرط يؤدي لمشاكل صحية.",
-        'general_desc': "تأكد دائماً من قراءة بطاقة المكونات والقيمة الغذائية قبل الاستهلاك.",
-        'error': "حدث خطأ أثناء قراءة الصورة، يرجى المحاولة بصورة أخرى."
+        'title': "🛒 Future Mall - مصنف المنتجات الذكي",
+        'subtitle': "تحليل الصور، نسبة الثقة، والتحليل الصحي المفصل",
+        'upload_label': "اختر أو اسحب صورة المنتج هنا",
+        'lang_btn': "English 🌐",
+        'model_error': "لم يتم العثور على ملفات النموذج (keras_model.h5 أو labels.txt)",
+        'result_header': "نتيجة التصنيف:",
+        'confidence': "نسبة الثقة:"
     },
     'en': {
-        'title': "🛍️ Smart Product Classifier - Future Mall",
-        'subtitle': "Upload any product image or paste its link to get its class, confidence score, and health assessment.",
-        'upload_label': "Choose or drag a product image here...",
-        'url_label': "Or paste a direct image URL from the internet:",
-        'uploaded_img': "Uploaded Image",
-        'prediction': "Predicted Category",
-        'confidence': "Confidence Level",
-        'health_title': "📊 Health & Nutritional Assessment",
-        'healthy': "🟢 Healthy Product",
-        'unhealthy': "🔴 Unhealthy Product (Consume in moderation)",
-        'fruits_desc': "Rich in natural fibers, vitamins, and antioxidants.",
-        'dairy_desc': "Great source of calcium and high-quality protein.",
-        'junk_desc': "Contains high levels of sugars or trans fats.",
-        'general_desc': "Always check the nutrition facts panel on the package.",
-        'error': "An error occurred while processing the image."
+        'title': "🛒 Future Mall - Smart Product Classifier",
+        'subtitle': "Image analysis, confidence score, and detailed health breakdown",
+        'upload_label': "Choose or drag & drop a product image here",
+        'lang_btn': "العربية 🌐",
+        'model_error': "Model files not found (keras_model.h5 or labels.txt)",
+        'result_header': "Classification Result:",
+        'confidence': "Confidence Score:"
     }
 }
 
 t = TEXTS[st.session_state.lang]
 
-st.title(t['title'])
-st.write(t['subtitle'])
+# 4. زر تغيير اللغة
+st.button(t['lang_btn'], on_click=toggle_language)
 
+# 5. العناوين
+st.title(t['title'])
+st.caption(t['subtitle'])
+
+# 6. تحميل النموذج
 @st.cache_resource
 def load_model():
-    return TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
+    if os.path.exists("keras_model.h5") and os.path.exists("labels.txt"):
+        return TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
+    return None
 
 model = load_model()
 
-# رفع ملف أو إدخال رابط صورة من النت
-uploaded_file = st.file_uploader(
-    t['upload_label'], 
-    type=["jpg", "jpeg", "png", "webp", "bmp", "tiff", "jfif"]
-)
-image_url = st.text_input(t['url_label'], placeholder="https://example.com/image.jpg")
+if model is None:
+    st.error(t['model_error'])
+else:
+    # 7. رفع الصورة ومعالجتها (مُحدثة بدون أخطاء Deprecation)
+    uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png"])
 
-image = None
-
-# قراءة الصورة من الملف أو من الرابط
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-elif image_url:
-    try:
-        req = urllib.request.Request(image_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response:
-            image = Image.open(response)
-    except Exception:
-        st.error(t['error'])
-
-if image is not None:
-    try:
-        image_rgb = image.convert("RGB")
-        st.image(image_rgb, caption=t['uploaded_img'], use_container_width=True)
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file).convert("RGB")
         
+        # عرض الصورة باستخدام المعيار الحديث بدلاً من use_container_width
+        st.image(image, width='stretch')
+
         # حفظ الصورة مؤقتاً للتنبؤ
-        image_rgb.save("temp_input.jpg")
-        
-        result = model.classify_image("temp_input.jpg")
-        predicted_class = result['class_name']
-        confidence = result['highest_class_confidence'] * 100
+        temp_path = "temp_image.jpg"
+        image.save(temp_path)
 
-        st.markdown("---")
-        st.success(f"**{t['prediction']}:** {predicted_class}")
-        st.info(f"**{t['confidence']}:** {confidence:.2f}%")
+        with st.spinner("..." if st.session_state.lang == 'en' else "جاري التحليل..."):
+            result = model.classify_image(temp_path)
 
-        st.markdown(f"### {t['health_title']}")
-        category_lower = str(predicted_class).lower()
+        # إزالة الملف المؤقت
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
-        if "fruit" in category_lower or "vegetable" in category_lower:
-            st.success(t['healthy'])
-            st.write(t['fruits_desc'])
-        elif "dairy" in category_lower or "milk" in category_lower or "yoghurt" in category_lower:
-            st.success(t['healthy'])
-            st.write(t['dairy_desc'])
-        else:
-            st.warning(t['unhealthy'])
-            st.write(t['junk_desc'])
+        # 8. عرض النتائج
+        st.subheader(t['result_header'])
+        class_name = result.get('highest_class_id', 'Unknown')
+        confidence = result.get('highest_class_confidence', 0.0) * 100
 
-        st.caption(f"💡 {t['general_desc']}")
-
-    except Exception as e:
-        st.error(f"{t['error']} ({e})")
+        st.success(f"**{class_name}**")
+        st.write(f"{t['confidence']} **{confidence:.2f}%**")
