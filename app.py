@@ -42,12 +42,13 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 4. تحميل النموذج والأسماء
+# 4. تحميل النموذج
 @st.cache_resource
 def load_teachable_model():
-    if os.path.exists("keras_model.h5") and os.path.exists("labels.txt"):
+    if os.path.exists("keras_model.h5") and (os.path.exists("labels.txt") or os.path.exists("labels")):
+        labels_file = "labels.txt" if os.path.exists("labels.txt") else "labels"
         model = tf.keras.models.load_model("keras_model.h5", compile=False)
-        with open("labels.txt", "r", encoding="utf-8") as f:
+        with open(labels_file, "r", encoding="utf-8") as f:
             class_names = [line.strip() for line in f.readlines()]
         return model, class_names
     return None, None
@@ -63,12 +64,12 @@ else:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, width='stretch')
 
-        # معالجة الصورة بنفس معايير Teachable Machine
+        # معالجة الصورة (224x224)
         size = (224, 224)
         image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized, dtype=np.float32)
         
-        # Normalization
+        # التطبيع
         normalized_image = (image_array / 127.5) - 1.0
         data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
         data[0] = normalized_image
