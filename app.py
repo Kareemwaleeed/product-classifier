@@ -42,11 +42,14 @@ st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 4. تحميل نموذج ONNX والـ Labels
+# 4. فحص وتحميل الملفات
 @st.cache_resource
 def load_onnx_model():
-    if os.path.exists("model.onnx") and os.path.exists("labels.txt"):
-        session = ort.InferenceSession("model.onnx")
+    # يبحث عن model.onnx أولاً، أو keras_model.onnx إذا تم تحميله بنفس الاسم
+    model_path = "model.onnx" if os.path.exists("model.onnx") else "keras_model.onnx" if os.path.exists("keras_model.onnx") else None
+    
+    if model_path and os.path.exists("labels.txt"):
+        session = ort.InferenceSession(model_path)
         with open("labels.txt", "r", encoding="utf-8") as f:
             class_names = [line.strip() for line in f.readlines()]
         return session, class_names
@@ -63,7 +66,7 @@ else:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, width='stretch')
 
-        # 5. معالجة الصورة بنفس معايير Teachable Machine
+        # معالجة الصورة بنفس إعدادات Teachable Machine (224x224)
         size = (224, 224)
         image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
         image_array = np.asarray(image_resized, dtype=np.float32)
@@ -72,14 +75,14 @@ else:
         normalized_image = (image_array / 127.5) - 1.0
         input_data = np.expand_dims(normalized_image, axis=0)
 
-        # 6. التشغيل عبر onnxruntime
+        # التشغيل بواسطة onnxruntime
         input_name = session.get_inputs()[0].name
         output_name = session.get_outputs()[0].name
 
         with st.spinner("جاري التحليل..." if st.session_state.lang == 'ar' else "Analyzing..."):
             prediction = session.run([output_name], {input_name: input_data})[0]
             
-            # حساب Softmax لضمان تحويل المخرجات لنسب مئوية صحيحة
+            # حساب Softmax
             exp_preds = np.exp(prediction[0] - np.max(prediction[0]))
             probabilities = exp_preds / np.sum(exp_preds)
             
@@ -87,7 +90,7 @@ else:
             class_name = class_names[index]
             confidence_score = float(probabilities[index]) * 100
 
-        # 7. عرض النتائج
+        # عرض النتيجة
         st.subheader(t['result_header'])
         st.success(f"**{class_name}**")
         st.write(f"{t['confidence']} **{confidence_score:.2f}%**")
