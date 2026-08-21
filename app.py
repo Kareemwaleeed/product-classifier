@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import tflite_runtime.interpreter as tflite
+from keras_models_lite import TeachableMachineModel
 
 # 1. إعداد الصفحة
 st.set_page_config(page_title="Future Mall - Classifier", layout="centered")
@@ -14,23 +14,23 @@ if 'lang' not in st.session_state:
 def toggle_language():
     st.session_state.lang = 'en' if st.session_state.lang == 'ar' else 'ar'
 
-# 3. النصوص
+# 3. النصوص باللغتين
 TEXTS = {
     'ar': {
         'title': "🛒 Future Mall - مصنف المنتجات الذكي",
-        'subtitle': "تحليل الصور، نسبة الثقة، والتحليل الصحي المفصل",
+        'subtitle': "تحليل الصور ونسبة الثقة بدقة",
         'upload_label': "اختر أو اسحب صورة المنتج هنا",
         'lang_btn': "English 🌐",
-        'model_error': "لم يتم العثور على ملفات النموذج (model.tflite أو labels.txt)",
+        'model_error': "تأكد من وجود ملفات keras_model.h5 و labels.txt في المستودع",
         'result_header': "نتيجة التصنيف:",
         'confidence': "نسبة الثقة:"
     },
     'en': {
         'title': "🛒 Future Mall - Smart Product Classifier",
-        'subtitle': "Image analysis, confidence score, and detailed health breakdown",
+        'subtitle': "Accurate image analysis and confidence scores",
         'upload_label': "Choose or drag & drop a product image here",
         'lang_btn': "العربية 🌐",
-        'model_error': "Model files not found (model.tflite or labels.txt)",
+        'model_error': "Ensure keras_model.h5 and labels.txt are in the repository",
         'result_header': "Classification Result:",
         'confidence': "Confidence Score:"
     }
@@ -38,59 +38,49 @@ TEXTS = {
 
 t = TEXTS[st.session_state.lang]
 
+# 4. الواجهة والزرار
 st.button(t['lang_btn'], on_click=toggle_language)
 st.title(t['title'])
 st.caption(t['subtitle'])
 
-# 4. تحميل نموذج TFLite
+# 5. تحميل النموذج والملفات
 @st.cache_resource
-def load_tflite_model():
-    labels_file = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
+def load_model():
+    model_path = "keras_model.h5"
+    labels_path = "labels.txt" if os.path.exists("labels.txt") else "labels" if os.path.exists("labels") else None
     
-    if os.path.exists("model.tflite") and labels_file:
-        interpreter = tflite.Interpreter(model_path="model.tflite")
-        interpreter.allocate_tensors()
-        
-        with open(labels_file, "r", encoding="utf-8") as f:
-            class_names = [line.strip() for line in f.readlines()]
-            
-        return interpreter, class_names
-    return None, None
+    if os.path.exists(model_path) and labels_path:
+        model = TeachableMachineModel(model_path=model_path, labels_file=labels_path)
+        return model
+    return None
 
-interpreter, class_names = load_tflite_model()
+tm_model = load_model()
 
-if interpreter is None or class_names is None:
+if tm_model is None:
     st.error(t['model_error'])
 else:
+    # 6. رفع الصورة والتصنيف
     uploaded_file = st.file_uploader(t['upload_label'], type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, width='stretch')
 
-        # معالجة الصورة (224x224)
-        size = (224, 224)
-        image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-        image_array = np.asarray(image_resized, dtype=np.float32)
-        
-        # التطبيع
-        normalized_image = (image_array / 127.5) - 1.0
-        data = np.expand_dims(normalized_image, axis=0)
-
-        # التنبؤ بـ TFLite
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
+        # حفظ وقتي للتنبؤ
+        temp_file = "temp_predict.jpg"
+        image.save(temp_file)
 
         with st.spinner("جاري التحليل..." if st.session_state.lang == 'ar' else "Analyzing..."):
-            interpreter.set_tensor(input_details[0]['index'], data)
-            interpreter.invoke()
-            prediction = interpreter.get_tensor(output_details[0]['index'])
+            predictions = tm_model.predict(temp_file)
+            
+            # الحصول على الفئة الأكثر ترجيحاً
+            highest_class = predictions['class_name']
+            confidence = predictions['confidence'] * 100
 
-            index = int(np.argmax(prediction[0]))
-            class_name = class_names[index]
-            confidence_score = float(prediction[0][index]) * 100
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
-        # عرض النتيجة
+        # 7. عرض النتائج
         st.subheader(t['result_header'])
-        st.success(f"**{class_name}**")
-        st.write(f"{t['confidence']} **{confidence_score:.2f}%**")
+        st.success(f"**{highest_class}**")
+        st.write(f"{t['confidence']} **{confidence:.2f}%**")
