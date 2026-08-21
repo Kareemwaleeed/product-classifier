@@ -1,9 +1,9 @@
 import streamlit as st
-from PIL import Image
-from teachablemachine import TeachableMachine
+import numpy as np
+from PIL import Image, ImageOps
+import pure_tf_keras as keras
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
-
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
