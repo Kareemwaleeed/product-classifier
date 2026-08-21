@@ -1,9 +1,10 @@
 import streamlit as st
 import numpy as np
 from PIL import Image, ImageOps
-import pure_tf_keras as keras
+import onnxruntime as ort
 
 st.set_page_config(page_title="Future Mall - Classifier", page_icon="🛍️", layout="centered")
+
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
@@ -23,8 +24,8 @@ TEXTS = {
         'health_title': "📊 التقييم والتحليل الصحي",
         'healthy': "🟢 منتج صحي مفيد",
         'unhealthy': "🔴 منتج غير صحي (يُفضل الاعتدال أو التجنب)",
-        'fruits_desc': "الفواكه غنية بالألياف والفيتامينات ومضادات الأكسدة. ممتازة للصحة العامة.",
-        'dairy_desc': "منتجات الألبان غنية بالكالسيوم والبروتين لبناء العظام والأنسجة.",
+        'fruits_desc': "الفواكه والخضروات غنية بالألياف، الفيتامينات، ومضادات الأكسدة. ممتازة للصحة العامة.",
+        'dairy_desc': "منتجات الألبان غنية بالكالسيوم والبروتين الممتاز لبناء العظام والأنسجة.",
         'junk_desc': "يحتوي على نسبة عالية من السكريات أو الدهون. الاستهلاك المفرط يؤدي لمشاكل صحية.",
         'general_desc': "تأكد دائماً من قراءة بطاقة المكونات والقيمة الغذائية قبل الاستهلاك.",
         'error': "حدث خطأ أثناء قراءة الصورة، يرجى المحاولة بصورة أخرى."
@@ -52,12 +53,8 @@ t = TEXTS[st.session_state.lang]
 st.title(t['title'])
 st.write(t['subtitle'])
 
-@st.cache_resource
-def load_model():
-    model = TeachableMachine(model_path="keras_model.h5", labels_file="labels.txt")
-    return model
-
-model = load_model()
+with open("labels.txt", "r", encoding="utf-8") as f:
+    class_names = [line.strip() for line in f.readlines()]
 
 uploaded_file = st.file_uploader(
     t['upload_label'], 
@@ -69,19 +66,28 @@ if uploaded_file is not None:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption=t['uploaded_img'], use_container_width=True)
         
-        # حفظ وقتي للصورة للتنبؤ
-        image.save("temp_image.jpg")
+        # تجهيز الصورة
+        size = (224, 224)
+        image_resized = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+        image_array = np.asarray(image_resized)
+        normalized = (image_array.astype(np.float32) / 127.5) - 1.0
+        data = np.expand_dims(normalized, axis=0)
+
+        # استدعاء نموذج Keras مباشرة عبر PIL/Numpy
+        import keras
+        model = keras.models.load_model("keras_model.h5", compile=False)
+        prediction = model.predict(data, verbose=0)
         
-        result = model.classify_image("temp_image.jpg")
-        predicted_class = result['class_name']
-        confidence = result['highest_class_confidence'] * 100
+        index = np.argmax(prediction)
+        predicted_class = class_names[index]
+        confidence = prediction[0][index] * 100
 
         st.markdown("---")
         st.success(f"**{t['prediction']}:** {predicted_class}")
         st.info(f"**{t['confidence']}:** {confidence:.2f}%")
 
         st.markdown(f"### {t['health_title']}")
-        category_lower = str(predicted_class).lower()
+        category_lower = predicted_class.lower()
 
         if "fruit" in category_lower or "vegetable" in category_lower:
             st.success(t['healthy'])
@@ -96,4 +102,4 @@ if uploaded_file is not None:
         st.caption(f"💡 {t['general_desc']}")
 
     except Exception as e:
-        st.error(t['error'])
+        st.error(f"{t['error']} ({e})")
