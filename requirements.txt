@@ -1,23 +1,5 @@
 
+streamlit
 numpy
-pandas
-scipy
-matplotlib
-seaborn
-scikit-learn
-torch
-torchvision
-tensorflow
-requests
-urllib3
-beautifulsoup4
-selenium
-fastapi
-uvicorn
-flask
-opencv-python
-Pillow
-python-dotenv
-pyyaml
-tqdm
-pydantic
+pillow
+tensorflow-cpu
